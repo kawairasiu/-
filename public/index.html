@@ -6,262 +6,229 @@
 <title>ドット絵の森</title>
 
 <style>
-  :root {
-    --panel-bg: rgba(255, 255, 255, 0.92);
-    --line: #d7d7d7;
-    --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  }
+:root {
+  --panel-bg: rgba(255,255,255,0.92);
+  --line: #d7d7d7;
+  --shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
 
-  body {
-    margin: 0;
-    font-family: sans-serif;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at top left, #fff8ec 0%, transparent 32%),
-      radial-gradient(circle at top right, #eef9ff 0%, transparent 28%),
-      radial-gradient(circle at bottom left, #eefdf5 0%, transparent 26%),
-      linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
-    color: #1f2937;
-  }
+body {
+  margin: 0;
+  font-family: sans-serif;
+  overflow: hidden;
+  background: #f7faf9;
+}
 
-  button, select, input {
-    font-size: 16px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: #fff;
-    color: #111827;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
-  }
+button, input, select {
+  font-size: 16px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #111827;
+}
 
-  button {
-    cursor: pointer;
-  }
+button {
+  cursor: pointer;
+}
 
-  button:active {
-    transform: translateY(1px);
-  }
+button:active {
+  transform: translateY(1px);
+}
 
-  #home {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 14px;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(251,191,36,0.18), transparent 22%),
-      radial-gradient(circle at 80% 30%, rgba(96,165,250,0.18), transparent 20%),
-      radial-gradient(circle at 45% 80%, rgba(52,211,153,0.18), transparent 18%),
-      linear-gradient(180deg, #fffdf7 0%, #f5fbff 100%);
-    text-align: center;
-  }
+#home {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg,#fff8e7,#e7f6ff,#eafff2);
+}
 
-  .homeCard {
-    width: min(92vw, 380px);
-    padding: 24px 18px;
-    border: 1px solid var(--line);
-    border-radius: 24px;
-    background: rgba(255,255,255,0.82);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(8px);
-  }
+.homeCard {
+  width: min(90vw, 380px);
+  padding: 24px;
+  border-radius: 20px;
+  background: white;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
 
-  .homeTitle {
-    margin: 0 0 8px;
-    font-size: 30px;
-    letter-spacing: 0.02em;
-  }
+.homeTitle {
+  margin: 0 0 12px;
+}
 
-  .homeSub {
-    margin: 0 0 18px;
-    color: #6b7280;
-    font-size: 14px;
-    line-height: 1.5;
-  }
+#app {
+  display: none;
+}
 
-  #app {
-    display: none;
-  }
+#toolbar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  z-index: 1000;
+}
 
-  #toolbar {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    z-index: 1003;
-  }
+#selectedDock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
 
-  #selectedDock {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel-bg);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(8px);
-  }
+#swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid #999;
+}
 
-  #selectedSwatch {
-    width: 24px;
-    height: 24px;
-    border-radius: 8px;
-    border: 1px solid #9ca3af;
-    background: #000000;
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
-  }
+#hex {
+  min-width: 88px;
+  font-weight: 700;
+}
 
-  #selectedText {
-    font-size: 13px;
-    font-weight: 700;
-    color: #111827;
-    min-width: 88px;
-  }
+#userCount {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
 
-  #userCount {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1003;
-    background: var(--panel-bg);
-    border: 1px solid var(--line);
-    padding: 8px 10px;
-    border-radius: 14px;
-    font-size: 14px;
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(8px);
-  }
+#pickerPanel {
+  position: fixed;
+  top: 60px;
+  left: 10px;
+  width: 220px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
 
-  #pickerPanel {
-    position: fixed;
-    top: 58px;
-    left: 10px;
-    width: min(48vw, 230px);
-    display: none;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1002;
-  }
+#pickerPanel.show {
+  display: flex;
+}
 
-  #pickerPanel.show {
-    display: flex;
-  }
+#colorWheel {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: white;
+  box-shadow: var(--shadow);
+  touch-action: none;
+}
 
-  #colorWheel {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
-    display: block;
-    border-radius: 50%;
-    border: 2px solid #cbd5e1;
-    background: #fff;
-    box-shadow: var(--shadow);
-    touch-action: none;
-  }
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: var(--shadow);
+}
 
-  .pickerCard {
-    padding: 10px;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: var(--panel-bg);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(8px);
-  }
+.slider {
+  width: 100%;
+}
 
-  .miniLabel {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 8px;
-  }
+.miniLabel {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
 
-  #brightnessSlider {
-    width: 100%;
-  }
+#recent {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 
-  #recent {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
+.recentColor {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #9ca3af;
+  border-radius: 7px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
 
-  .recentColor {
-    width: 22px;
-    height: 22px;
-    border: 1px solid #9ca3af;
-    border-radius: 7px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-  }
+#stage {
+  position: fixed;
+  left: 50%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
 
-  #canvasStage {
-    position: fixed;
-    left: 50%;
-    top: 52%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-    will-change: transform;
-  }
+#canvasPanZoom {
+  transform-origin: center center;
+  will-change: transform;
+}
 
-  #canvasPanZoom {
-    transform-origin: center center;
-    will-change: transform;
-  }
+#canvas {
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: var(--shadow);
+  border-radius: 12px;
+  cursor: crosshair;
+  touch-action: none;
+}
 
-  #canvas {
-    display: block;
-    border: 1px solid #cfd8e3;
-    background: #fff;
-    touch-action: none;
-    cursor: crosshair;
-    box-shadow: var(--shadow);
-    border-radius: 12px;
-  }
+#chatBox {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  width: 260px;
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  z-index: 1000;
+}
 
-  #chatBox {
-    position: fixed;
-    right: 10px;
-    bottom: 10px;
-    width: min(86vw, 280px);
-    height: 250px;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: var(--panel-bg);
-    box-shadow: var(--shadow);
-    z-index: 1003;
-    backdrop-filter: blur(8px);
-    overflow: hidden;
-  }
+#chatHeader {
+  padding: 6px 8px;
+  background: #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  #messages {
-    flex: 1;
-    overflow-y: auto;
-    font-size: 13px;
-    padding: 8px;
-    line-height: 1.45;
-  }
+#messages {
+  flex: 1;
+  overflow: auto;
+  font-size: 13px;
+  padding: 6px;
+  line-height: 1.45;
+}
 
-  #chatInput {
-    font-size: 16px;
-    padding: 10px 12px;
-    border: none;
-    border-top: 1px solid var(--line);
-    outline: none;
-    background: rgba(255,255,255,0.95);
-  }
+#chatInput {
+  border: none;
+  border-top: 1px solid #ddd;
+  padding: 8px;
+  outline: none;
+}
 
-  .buttonRow {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+.hidden {
+  display: none !important;
+}
 </style>
 </head>
 <body>
@@ -269,11 +236,7 @@
 <div id="home">
   <div class="homeCard">
     <h1 class="homeTitle">🌳 ドット絵の森</h1>
-    <p class="homeSub">
-      みんなで同じ森に集まって、<br>
-      ドット絵をゆっくり育てる場所。
-    </p>
-
+    <p>みんなで同じ森に集まって、ドット絵を育てる場所。</p>
     <select id="sizeSelect">
       <option value="8">8</option>
       <option value="16">16</option>
@@ -283,29 +246,28 @@
       <option value="256">256</option>
       <option value="512">512</option>
     </select>
-
-    <div class="buttonRow" style="margin-top: 14px;">
+    <div style="margin-top:14px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
       <button id="createRoom">🌱 部屋作成</button>
       <button id="joinRoomBtn">🌿 入室</button>
     </div>
-
-    <div style="margin-top: 14px;">
-      <input id="roomInput" placeholder="部屋ID" style="width: min(80vw, 240px);" />
+    <div style="margin-top:14px;">
+      <input id="roomInput" placeholder="部屋ID" style="width:min(80vw,240px);" />
     </div>
   </div>
 </div>
 
 <div id="app">
   <div id="toolbar">
-    <button id="togglePicker">🎨</button>
+    <button id="pickerBtn">🎨</button>
+    <button id="fillBtn">🪣</button>
     <button id="eyeBtn">🧲</button>
     <button id="undoBtn">↩</button>
     <button id="redoBtn">↪</button>
     <button id="saveBtn">💾 PNG</button>
 
     <div id="selectedDock">
-      <div id="selectedSwatch"></div>
-      <div id="selectedText">#000000</div>
+      <div id="swatch"></div>
+      <span id="hex">#000000</span>
     </div>
   </div>
 
@@ -314,26 +276,38 @@
   <div id="pickerPanel">
     <canvas id="colorWheel" width="180" height="180"></canvas>
 
-    <div class="pickerCard">
+    <div class="panel">
       <div class="miniLabel">明度</div>
-      <input id="brightnessSlider" type="range" min="0" max="100" value="50" />
+      <input id="lightSlider" class="slider" type="range" min="0" max="100" value="50" />
     </div>
 
-    <div class="pickerCard">
+    <div class="panel">
+      <div class="miniLabel">彩度</div>
+      <input id="satSlider" class="slider" type="range" min="0" max="100" value="100" />
+    </div>
+
+    <div class="panel">
       <div class="miniLabel">最近使った色</div>
       <div id="recent"></div>
     </div>
   </div>
 
-  <div id="canvasStage">
+  <div id="stage">
     <div id="canvasPanZoom">
       <canvas id="canvas"></canvas>
     </div>
   </div>
 
   <div id="chatBox">
+    <div id="chatHeader">
+      <span>チャット</span>
+      <div style="display:flex; gap:6px;">
+        <button id="chatToggle">−</button>
+        <button id="closeChat">×</button>
+      </div>
+    </div>
     <div id="messages"></div>
-    <input id="chatInput" placeholder="メッセージ" />
+    <input id="chatInput" placeholder="送信..." />
   </div>
 </div>
 
@@ -367,8 +341,7 @@ document.getElementById("joinRoomBtn").onclick = () => {
 function init() {
   const socket = io({ query: { room, size: sizeParam } });
 
-  const canvasStage = document.getElementById("canvasStage");
-  const canvasPanZoom = document.getElementById("canvasPanZoom");
+  const canvasStage = document.getElementById("canvasPanZoom");
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
@@ -383,6 +356,7 @@ function init() {
 
   let selected = "#000000";
   let eyeDrop = false;
+  let fillMode = false;
 
   let undoStack = [];
   let redoStack = [];
@@ -409,12 +383,21 @@ function init() {
   let wheelMode = null;
   let wheelPointerId = null;
 
+  let selectedHue = 0;
+  let selectedSat = 1;
+  let selectedLight = 0.5;
+  let innerCursorX = 80 + 62;
+  let innerCursorY = 80;
+
+  const canvasX = 512;
+  const canvasY = 512;
+
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
 
   function applyTransform() {
-    canvasPanZoom.style.transform =
+    canvasStage.style.transform =
       `translate(${panX}px, ${panY}px) scale(${viewScale})`;
   }
 
@@ -435,10 +418,8 @@ function init() {
   }
 
   function updateSelectedColorUI() {
-    const swatch = document.getElementById("selectedSwatch");
-    const text = document.getElementById("selectedText");
-    swatch.style.background = selected;
-    text.textContent = selected;
+    document.getElementById("swatch").style.background = selected;
+    document.getElementById("hex").textContent = selected;
   }
 
   function addRecentColor(color) {
@@ -489,11 +470,44 @@ function init() {
     return { x: Math.floor(px), y: Math.floor(py) };
   }
 
+  function floodFill(startX, startY, targetColor, newColor) {
+    if (targetColor === newColor) return;
+
+    const stack = [[startX, startY]];
+    const visited = new Set();
+
+    const key = (x, y) => `${x},${y}`;
+
+    while (stack.length) {
+      const [x, y] = stack.pop();
+      if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) continue;
+      const k = key(x, y);
+      if (visited.has(k)) continue;
+      visited.add(k);
+
+      if (board[y][x] !== targetColor) continue;
+
+      board[y][x] = newColor;
+      renderCell(x, y, newColor);
+
+      stack.push([x + 1, y]);
+      stack.push([x - 1, y]);
+      stack.push([x, y + 1]);
+      stack.push([x, y - 1]);
+    }
+  }
+
+  function selectedColorFromHsl() {
+    selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
+    updateSelectedColorUI();
+    document.getElementById("lightSlider").value = Math.round(selectedLight * 100);
+    document.getElementById("satSlider").value = Math.round(selectedSat * 100);
+  }
+
   /* ===== undo / redo ===== */
   document.getElementById("undoBtn").onclick = () => {
     if (undoStack.length === 0) return;
     redoStack.push(JSON.stringify(board));
-
     board = JSON.parse(undoStack.pop());
     socket.emit("setBoard", { board });
   };
@@ -501,7 +515,6 @@ function init() {
   document.getElementById("redoBtn").onclick = () => {
     if (redoStack.length === 0) return;
     undoStack.push(JSON.stringify(board));
-
     board = JSON.parse(redoStack.pop());
     socket.emit("setBoard", { board });
   };
@@ -514,34 +527,32 @@ function init() {
     a.click();
   };
 
-  /* ===== カラーホイール ===== */
+  /* ===== パレット開閉 ===== */
   const pickerPanel = document.getElementById("pickerPanel");
+  document.getElementById("pickerBtn").onclick = () => {
+    pickerPanel.classList.toggle("show");
+  };
+
+  /* ===== チャット開閉 ===== */
+  const chatBox = document.getElementById("chatBox");
+  document.getElementById("chatToggle").onclick = () => {
+    document.getElementById("messages").classList.toggle("hidden");
+    document.getElementById("chatInput").classList.toggle("hidden");
+  };
+
+  document.getElementById("closeChat").onclick = () => {
+    chatBox.classList.add("hidden");
+  };
+
+  /* ===== カラーホイール ===== */
   const wheel = document.getElementById("colorWheel");
   const wctx = wheel.getContext("2d");
-  const brightnessSlider = document.getElementById("brightnessSlider");
-
   const W = wheel.width;
   const H = wheel.height;
   const cx = W / 2;
   const cy = H / 2;
   const outerR = 88;
   const innerR = 62;
-
-  let selectedHue = 0;
-  let selectedSat = 1;
-  let selectedLight = 0.5;
-  let innerCursorX = cx + innerR;
-  let innerCursorY = cy;
-
-  function syncBrightnessUI() {
-    brightnessSlider.value = Math.round(selectedLight * 100);
-  }
-
-  function updateSelectedColorFromHsl() {
-    selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
-    updateSelectedColorUI();
-    syncBrightnessUI();
-  }
 
   function drawWheel() {
     wctx.clearRect(0, 0, W, H);
@@ -630,7 +641,7 @@ function init() {
 
     if (wheelMode === "hue") {
       selectedHue = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-      updateSelectedColorFromHsl();
+      selectedColorFromHsl();
       drawWheel();
       return;
     }
@@ -638,7 +649,7 @@ function init() {
     if (wheelMode === "inner") {
       selectedSat = clamp(dist / innerR, 0, 1);
       selectedLight = clamp(1 - ((y + innerR) / (innerR * 2)), 0, 1);
-      updateSelectedColorFromHsl();
+      selectedColorFromHsl();
       innerCursorX = cx + x;
       innerCursorY = cy + y;
       drawWheel();
@@ -647,11 +658,8 @@ function init() {
 
   drawWheel();
   updateSelectedColorUI();
-  syncBrightnessUI();
-
-  document.getElementById("togglePicker").onclick = () => {
-    pickerPanel.classList.toggle("show");
-  };
+  document.getElementById("lightSlider").value = Math.round(selectedLight * 100);
+  document.getElementById("satSlider").value = Math.round(selectedSat * 100);
 
   wheel.addEventListener("pointerdown", (e) => {
     e.preventDefault();
@@ -693,15 +701,29 @@ function init() {
     wheelPointerId = null;
   });
 
-  brightnessSlider.addEventListener("input", () => {
-    selectedLight = Number(brightnessSlider.value) / 100;
-    updateSelectedColorFromHsl();
+  document.getElementById("lightSlider").addEventListener("input", (e) => {
+    selectedLight = Number(e.target.value) / 100;
+    selectedColorFromHsl();
+    drawWheel();
+  });
+
+  document.getElementById("satSlider").addEventListener("input", (e) => {
+    selectedSat = Number(e.target.value) / 100;
+    selectedColorFromHsl();
     drawWheel();
   });
 
   /* ===== スポイト ===== */
+  let eyeDrop = false;
   document.getElementById("eyeBtn").onclick = () => {
     eyeDrop = !eyeDrop;
+  };
+
+  /* ===== 塗りつぶし ===== */
+  let fillMode = false;
+  document.getElementById("fillBtn").onclick = () => {
+    fillMode = !fillMode;
+    document.getElementById("fillBtn").style.background = fillMode ? "#dbeafe" : "#fff";
   };
 
   /* ===== 初期データ ===== */
@@ -709,7 +731,6 @@ function init() {
     board = data.board;
     GRID_SIZE = data.size;
     CELL_SIZE = canvas.width / GRID_SIZE;
-
     fitCanvasDisplay();
     drawFull();
     applyTransform();
@@ -722,19 +743,25 @@ function init() {
     drawFull();
   });
 
-  /* ===== 共有描画反映 ===== */
   socket.on("draw", (d) => {
     if (d.x < 0 || d.y < 0 || d.x >= GRID_SIZE || d.y >= GRID_SIZE) return;
     board[d.y][d.x] = d.color;
     renderCell(d.x, d.y, d.color);
   });
 
-  /* ===== 人数 ===== */
   socket.on("users", (count) => {
     document.getElementById("userCount").innerText = `👥 ${count}人オンライン`;
   });
 
-  /* ===== チャット ===== */
+  socket.on("chat", (d) => {
+    const div = document.createElement("div");
+    div.textContent = d.user === "system" ? d.message : `${d.user}: ${d.message}`;
+    const messages = document.getElementById("messages");
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  });
+
+  /* ===== チャット送信 ===== */
   document.getElementById("chatInput").onkeydown = (e) => {
     if (e.key === "Enter") {
       const message = e.target.value.trim();
@@ -744,19 +771,11 @@ function init() {
         user: "名無し",
         message
       });
-
       e.target.value = "";
     }
   };
 
-  socket.on("chat", (d) => {
-    const div = document.createElement("div");
-    div.textContent = d.user === "system" ? d.message : `${d.user}: ${d.message}`;
-    document.getElementById("messages").appendChild(div);
-    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-  });
-
-  /* ===== キャンバス描画 ===== */
+  /* ===== 描画操作 ===== */
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
   canvas.onclick = (e) => {
@@ -771,13 +790,18 @@ function init() {
       return;
     }
 
-    undoStack.push(JSON.stringify(board));
-    if (undoStack.length > MAX_HISTORY) undoStack.shift();
-    redoStack = [];
+    pushUndoSnapshot();
 
-    board[y][x] = selected;
-    renderCell(x, y, selected);
-    socket.emit("draw", { x, y, color: selected });
+    if (fillMode) {
+      const target = board[y][x];
+      floodFill(x, y, target, selected);
+      socket.emit("setBoard", { board });
+    } else {
+      board[y][x] = selected;
+      renderCell(x, y, selected);
+      socket.emit("draw", { x, y, color: selected });
+    }
+
     addRecentColor(selected);
   };
 
@@ -866,6 +890,5 @@ function init() {
   applyTransform();
 }
 </script>
-
 </body>
 </html>

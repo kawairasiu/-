@@ -46,7 +46,9 @@ function load() {
 function save() {
   try {
     fs.writeFileSync(SAVE_FILE, JSON.stringify(rooms));
-  } catch {}
+  } catch {
+    // 何もしない
+  }
 }
 
 load();
@@ -87,6 +89,7 @@ io.on("connection", (socket) => {
     if (!r || !data || !Array.isArray(data.board)) return;
 
     const board = data.board;
+
     if (board.length !== r.size) return;
     for (const row of board) {
       if (!Array.isArray(row) || row.length !== r.size) return;
@@ -104,7 +107,9 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("save", save);
+  socket.on("save", () => {
+    save();
+  });
 
   socket.on("disconnect", () => {
     roomUsers[room] = Math.max(0, (roomUsers[room] || 1) - 1);
