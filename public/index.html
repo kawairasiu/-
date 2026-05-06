@@ -2,6 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>ドット絵の森</title>
 
 <style>
@@ -15,14 +17,21 @@ body {
 #home {
   position: fixed;
   inset: 0;
-  background: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 12px;
+  font-size: 18px;
 }
 
+#home button,
+#home input {
+  font-size: 18px;
+  padding: 12px;
+}
+
+/* ===== アプリ ===== */
 #app {
   display: none;
 }
@@ -33,6 +42,7 @@ canvas {
   margin: auto;
   background: white;
   border: 1px solid #ccc;
+  touch-action: none;
 }
 
 /* ===== パレット ===== */
@@ -40,20 +50,20 @@ canvas {
   position: fixed;
   top: 10px;
   left: 10px;
+  width: 90vw;
+  max-width: 360px;
   display: flex;
   flex-wrap: wrap;
-  width: 320px;
-  gap: 2px;
-  background: rgba(255,255,255,0.95);
+  gap: 4px;
   padding: 8px;
+  background: rgba(255,255,255,0.95);
   border: 1px solid #ddd;
 }
 
 .color {
-  width: 12px;
-  height: 12px;
+  width: 20px;
+  height: 20px;
   border: 1px solid #aaa;
-  cursor: pointer;
 }
 
 /* ===== チャット ===== */
@@ -61,25 +71,26 @@ canvas {
   position: fixed;
   right: 10px;
   bottom: 10px;
-  width: 220px;
-  height: 200px;
-  background: white;
-  border: 1px solid #ccc;
+  width: 260px;
+  height: 240px;
   display: flex;
   flex-direction: column;
+  border: 1px solid #ccc;
+  background: white;
 }
 
 #messages {
   flex: 1;
   overflow-y: auto;
-  font-size: 12px;
+  font-size: 13px;
   padding: 5px;
 }
 
 #chatInput {
+  font-size: 16px;
+  padding: 8px;
   border: none;
   border-top: 1px solid #ccc;
-  padding: 5px;
 }
 </style>
 </head>
@@ -103,7 +114,6 @@ canvas {
   <div id="palette"></div>
   <canvas id="canvas"></canvas>
 
-  <!-- チャット -->
   <div id="chatBox">
     <div id="messages"></div>
     <input id="chatInput" placeholder="メッセージ" />
@@ -126,7 +136,7 @@ window.onload = () => {
   }
 };
 
-/* ===== ルーム作成 ===== */
+/* ===== ルーム ===== */
 document.getElementById("createRoom").onclick = () => {
   const id = Math.random().toString(36).substring(2, 8);
   location.href = "?room=" + id;
@@ -152,10 +162,22 @@ function init() {
   let board = [];
   let selected = "#000000";
 
-  /* ===== パレット（256簡易） ===== */
+  /* ===== パレット ===== */
   const palette = document.getElementById("palette");
 
-  const colors = ["#000","#fff","#f00","#0f0","#00f","#ff0","#0ff","#f0f","#888","#ffa500"];
+  const colors = generateColors();
+
+  function generateColors() {
+    const colors = [];
+    const steps = [0, 51, 102, 153, 204, 255];
+
+    for (let r of steps)
+      for (let g of steps)
+        for (let b of steps)
+          colors.push(`rgb(${r},${g},${b})`);
+
+    return colors;
+  }
 
   colors.forEach(c => {
     const d = document.createElement("div");
@@ -165,11 +187,13 @@ function init() {
     palette.appendChild(d);
   });
 
+  /* ===== 描画 ===== */
   function draw() {
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         ctx.fillStyle = board[y][x];
         ctx.fillRect(x*pixel, y*pixel, pixel, pixel);
+
         ctx.strokeStyle = "#e0e0e0";
         ctx.strokeRect(x*pixel, y*pixel, pixel, pixel);
       }

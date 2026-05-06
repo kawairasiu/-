@@ -14,9 +14,9 @@ const GRID_SIZE = 32;
 app.use(express.static("public"));
 
 let rooms = {};
-let userCount = 0;
+let roomUsers = {};
 
-/* ===== 保存ロード ===== */
+/* ===== 保存読み込み ===== */
 function loadSave() {
   try {
     if (fs.existsSync(SAVE_FILE)) {
@@ -38,8 +38,6 @@ loadSave();
 
 /* ===== Socket ===== */
 io.on("connection", (socket) => {
-  userCount++;
-
   const room = socket.handshake.query.room || "default";
 
   if (!rooms[room]) {
@@ -48,11 +46,13 @@ io.on("connection", (socket) => {
     );
   }
 
+  if (!roomUsers[room]) roomUsers[room] = 0;
+  roomUsers[room]++;
+
   socket.join(room);
 
-  io.emit("users", userCount);
+  io.to(room).emit("users", roomUsers[room]);
 
-  /* 👋 入室ログ */
   io.to(room).emit("chat", {
     user: "system",
     message: "👤 誰かが入室しました"
@@ -60,7 +60,7 @@ io.on("connection", (socket) => {
 
   socket.emit("init", rooms[room]);
 
-  /* 🎨 描画 */
+  /* ===== 描画 ===== */
   socket.on("draw", (data) => {
     const { x, y, color } = data;
 
@@ -72,7 +72,7 @@ io.on("connection", (socket) => {
     io.to(room).emit("draw", { x, y, color });
   });
 
-  /* 💬 チャット */
+  /* ===== チャット ===== */
   socket.on("chat", (data) => {
     io.to(room).emit("chat", {
       user: data.user || "名無し",
@@ -80,11 +80,11 @@ io.on("connection", (socket) => {
     });
   });
 
-  /* 👋 退出 */
+  /* ===== 切断 ===== */
   socket.on("disconnect", () => {
-    userCount--;
+    roomUsers[room]--;
 
-    io.emit("users", userCount);
+    io.to(room).emit("users", roomUsers[room]);
 
     io.to(room).emit("chat", {
       user: "system",
@@ -95,10 +95,10 @@ io.on("connection", (socket) => {
   socket.on("save", saveAll);
 });
 
-/* 💾 自動保存 */
+/* ===== 自動保存 ===== */
 setInterval(saveAll, 5000);
 
-/* 🚀 起動 */
+/* ===== 起動 ===== */
 server.listen(PORT, "0.0.0.0", () => {
-  console.log("🌳 ドット絵の森 起動");
+  console.log("🌳 ドット絵の森起動");
 });
