@@ -44,12 +44,22 @@ canvas {
   height: 160px;
   border-radius: 50%;
   border: 1px solid #ccc;
+  display: none;
   background: white;
+  z-index: 1000;
 }
 
-/* ===== ボタン ===== */
-button {
-  margin: 4px;
+#colorWheel.show {
+  display: block;
+}
+
+/* ===== 最近色 ===== */
+#recent {
+  position: fixed;
+  top: 180px;
+  left: 10px;
+  display: flex;
+  gap: 4px;
 }
 
 /* ===== チャット ===== */
@@ -77,6 +87,10 @@ button {
   padding: 8px;
   border: none;
   border-top: 1px solid #ccc;
+}
+
+button {
+  margin: 4px;
 }
 </style>
 </head>
@@ -106,9 +120,13 @@ button {
 <!-- ===== 本体 ===== -->
 <div id="app">
 
+  <button id="togglePicker">🎨</button>
+  <button id="eyeBtn">🧲</button>
+  <button id="saveBtn">💾 PNG</button>
+
   <canvas id="colorWheel" width="160" height="160"></canvas>
 
-  <button id="saveBtn">💾 PNG保存</button>
+  <div id="recent"></div>
 
   <canvas id="canvas"></canvas>
 
@@ -116,7 +134,6 @@ button {
     <div id="messages"></div>
     <input id="chatInput" placeholder="メッセージ" />
   </div>
-
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -135,15 +152,13 @@ window.onload = () => {
   }
 };
 
-/* ===== ルーム作成 ===== */
+/* ===== ルーム ===== */
 document.getElementById("createRoom").onclick = () => {
-  const id = Math.random().toString(36).substring(2, 8);
+  const id = Math.random().toString(36).substring(2,7);
   const size = document.getElementById("sizeSelect").value;
-
   location.href = `?room=${id}&size=${size}`;
 };
 
-/* ===== 入室 ===== */
 document.getElementById("joinRoom").onclick = () => {
   const id = document.getElementById("roomInput").value;
   if (id) location.href = `?room=${id}`;
@@ -165,110 +180,122 @@ function init() {
 
   let board = [];
   let selected = "#000";
+  let eyeDropper = false;
+  let recent = [];
+  let selectedHue = 0;
 
   /* ===== カラーホイール ===== */
   const wheel = document.getElementById("colorWheel");
   const wctx = wheel.getContext("2d");
 
-  const r = 80;
   const c = 80;
 
   function drawWheel() {
-    for (let a = 0; a < 360; a++) {
-      const rad = (a * Math.PI) / 180;
+    for (let a=0;a<360;a++){
+      const rad=(a*Math.PI)/180;
 
-      for (let i = 0; i < r; i++) {
-        const x = c + Math.cos(rad) * i;
-        const y = c + Math.sin(rad) * i;
+      for(let r=0;r<80;r++){
+        const x=c+Math.cos(rad)*r;
+        const y=c+Math.sin(rad)*r;
 
-        wctx.fillStyle = `hsl(${a},${(i/r)*100}%,50%)`;
-        wctx.fillRect(x, y, 2, 2);
+        wctx.fillStyle=`hsl(${a},${(r/80)*100}%,50%)`;
+        wctx.fillRect(x,y,2,2);
       }
     }
   }
 
   drawWheel();
 
-  wheel.onclick = (e) => {
-    const rect = wheel.getBoundingClientRect();
-
-    const x = e.clientX - rect.left - c;
-    const y = e.clientY - rect.top - c;
-
-    const dist = Math.sqrt(x*x + y*y);
-    if (dist > r) return;
-
-    const angle = (Math.atan2(y,x)*180)/Math.PI;
-    const hue = (angle+360)%360;
-    const sat = dist/r;
-
-    selected = `hsl(${hue},${sat*100}%,50%)`;
+  /* ===== 開閉 ===== */
+  document.getElementById("togglePicker").onclick = () => {
+    wheel.classList.toggle("show");
   };
 
-  /* ===== 保存 ===== */
-  document.getElementById("saveBtn").onclick = () => {
-    const link = document.createElement("a");
-    link.download = `dot-${Date.now()}.png`;
-    link.href = canvas.toDataURL();
-    link.click();
+  /* ===== スポイト ===== */
+  document.getElementById("eyeBtn").onclick = () => {
+    eyeDropper = !eyeDropper;
+  };
+
+  /* ===== 最近色 ===== */
+  function addRecent(color){
+    recent.unshift(color);
+    recent=[...new Set(recent)].slice(0,4);
+
+    const div=document.getElementById("recent");
+    div.innerHTML="";
+
+    recent.forEach(c=>{
+      const box=document.createElement("div");
+      box.style.width="20px";
+      box.style.height="20px";
+      box.style.background=c;
+      box.onclick=()=>selected=c;
+      div.appendChild(box);
+    });
+  }
+
+  /* ===== PNG保存 ===== */
+  document.getElementById("saveBtn").onclick=()=>{
+    const a=document.createElement("a");
+    a.download=`dot-${Date.now()}.png`;
+    a.href=canvas.toDataURL();
+    a.click();
   };
 
   /* ===== 描画 ===== */
-  function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+  function draw(){
+    ctx.clearRect(0,0,512,512);
 
-    for (let y=0;y<GRID_SIZE;y++){
-      for (let x=0;x<GRID_SIZE;x++){
-        ctx.fillStyle = board[y][x];
+    for(let y=0;y<GRID_SIZE;y++){
+      for(let x=0;x<GRID_SIZE;x++){
+        ctx.fillStyle=board[y][x];
 
-        ctx.fillRect(
-          x*cellSize,
-          y*cellSize,
-          cellSize,
-          cellSize
-        );
-
+        ctx.fillRect(x*cellSize,y*cellSize,cellSize,cellSize);
         ctx.strokeStyle="#eee";
-        ctx.strokeRect(
-          x*cellSize,
-          y*cellSize,
-          cellSize,
-          cellSize
-        );
+        ctx.strokeRect(x*cellSize,y*cellSize,cellSize,cellSize);
       }
     }
   }
 
-  socket.on("init", d => {
-    board = d.board;
+  socket.on("init",d=>{
+    board=d.board;
     draw();
   });
 
-  socket.on("draw", d => {
-    board[d.y][d.x] = d.color;
+  socket.on("draw",d=>{
+    board[d.y][d.x]=d.color;
     draw();
   });
 
-  canvas.onclick = e => {
-    const rect = canvas.getBoundingClientRect();
+  /* ===== クリック ===== */
+  canvas.onclick=(e)=>{
+    const rect=canvas.getBoundingClientRect();
 
-    const x = Math.floor((e.clientX-rect.left)/cellSize);
-    const y = Math.floor((e.clientY-rect.top)/cellSize);
+    const x=Math.floor((e.clientX-rect.left)/cellSize);
+    const y=Math.floor((e.clientY-rect.top)/cellSize);
+
+    if(eyeDropper){
+      selected=board[y][x];
+      addRecent(selected);
+      eyeDropper=false;
+      return;
+    }
 
     socket.emit("draw",{x,y,color:selected});
+    addRecent(selected);
   };
 
   /* ===== チャット ===== */
-  document.getElementById("chatInput").onkeydown = e => {
-    if (e.key==="Enter"){
+  document.getElementById("chatInput").onkeydown=e=>{
+    if(e.key==="Enter"){
       socket.emit("chat",{user:"名無し",message:e.target.value});
       e.target.value="";
     }
   };
 
-  socket.on("chat", d => {
+  socket.on("chat",d=>{
     const div=document.createElement("div");
-    div.textContent = d.user==="system"?d.message:`${d.user}: ${d.message}`;
+    div.textContent=d.user==="system"?d.message:`${d.user}: ${d.message}`;
     document.getElementById("messages").appendChild(div);
   });
 }

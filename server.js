@@ -15,7 +15,6 @@ app.use(express.static("public"));
 let rooms = {};
 let roomUsers = {};
 
-/* ===== 保存ロード ===== */
 function load() {
   try {
     if (fs.existsSync(SAVE_FILE)) {
@@ -26,7 +25,6 @@ function load() {
   }
 }
 
-/* ===== 保存 ===== */
 function save() {
   try {
     fs.writeFileSync(SAVE_FILE, JSON.stringify(rooms));
@@ -35,13 +33,13 @@ function save() {
 
 load();
 
-/* ===== サイズ制限 ===== */
+const allowedSizes = [8,16,32,64,128,256,512];
+
 function validateSize(size) {
-  const allowed = [8,16,32,64,128,256,512];
-  return allowed.includes(size) ? size : 32;
+  size = Number(size);
+  return allowedSizes.includes(size) ? size : 32;
 }
 
-/* ===== ルーム作成 ===== */
 function createRoom(room, size) {
   size = validateSize(size);
 
@@ -53,12 +51,9 @@ function createRoom(room, size) {
   };
 }
 
-/* ===== 接続 ===== */
 io.on("connection", (socket) => {
   const room = socket.handshake.query.room || "default";
-  let size = Number(socket.handshake.query.size || 32);
-
-  size = validateSize(size);
+  let size = validateSize(socket.handshake.query.size || 32);
 
   if (!rooms[room]) {
     createRoom(room, size);
@@ -73,7 +68,6 @@ io.on("connection", (socket) => {
 
   socket.emit("init", rooms[room]);
 
-  /* ===== 描画 ===== */
   socket.on("draw", (data) => {
     const r = rooms[room];
     if (!r) return;
@@ -87,7 +81,6 @@ io.on("connection", (socket) => {
     io.to(room).emit("draw", { x, y, color });
   });
 
-  /* ===== チャット ===== */
   socket.on("chat", (data) => {
     io.to(room).emit("chat", {
       user: data.user || "名無し",
@@ -95,7 +88,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  /* ===== 切断 ===== */
   socket.on("disconnect", () => {
     roomUsers[room]--;
 
@@ -110,9 +102,8 @@ io.on("connection", (socket) => {
   socket.on("save", save);
 });
 
-/* ===== 自動保存 ===== */
 setInterval(save, 5000);
 
-server.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, () => {
   console.log("🌳 ドット絵の森 起動");
 });
