@@ -6,229 +6,274 @@
 <title>ドット絵の森</title>
 
 <style>
-:root {
-  --panel-bg: rgba(255,255,255,0.92);
-  --line: #d7d7d7;
-  --shadow: 0 12px 30px rgba(0,0,0,0.12);
-}
+  :root {
+    --panel-bg: rgba(255,255,255,0.92);
+    --line: #d7d7d7;
+    --shadow: 0 12px 30px rgba(0,0,0,0.12);
+  }
 
-body {
-  margin: 0;
-  font-family: sans-serif;
-  overflow: hidden;
-  background: #f7faf9;
-}
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top left, #fff8ec 0%, transparent 32%),
+      radial-gradient(circle at top right, #eef9ff 0%, transparent 28%),
+      radial-gradient(circle at bottom left, #eefdf5 0%, transparent 26%),
+      linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+    color: #1f2937;
+  }
 
-button, input, select {
-  font-size: 16px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: #111827;
-}
+  button, input, select {
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: #111827;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
+  }
 
-button {
-  cursor: pointer;
-}
+  button {
+    cursor: pointer;
+  }
 
-button:active {
-  transform: translateY(1px);
-}
+  button:active {
+    transform: translateY(1px);
+  }
 
-#home {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg,#fff8e7,#e7f6ff,#eafff2);
-}
+  #home {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(251,191,36,0.18), transparent 22%),
+      radial-gradient(circle at 80% 30%, rgba(96,165,250,0.18), transparent 20%),
+      radial-gradient(circle at 45% 80%, rgba(52,211,153,0.18), transparent 18%),
+      linear-gradient(180deg, #fffdf7 0%, #f5fbff 100%);
+    text-align: center;
+  }
 
-.homeCard {
-  width: min(90vw, 380px);
-  padding: 24px;
-  border-radius: 20px;
-  background: white;
-  box-shadow: var(--shadow);
-  text-align: center;
-}
+  .homeCard {
+    width: min(92vw, 380px);
+    padding: 24px 18px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: rgba(255,255,255,0.82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
 
-.homeTitle {
-  margin: 0 0 12px;
-}
+  .homeTitle {
+    margin: 0 0 8px;
+    font-size: 30px;
+    letter-spacing: 0.02em;
+  }
 
-#app {
-  display: none;
-}
+  .homeSub {
+    margin: 0 0 18px;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+  }
 
-#toolbar {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  z-index: 1000;
-}
+  #app {
+    display: none;
+  }
 
-#selectedDock {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--panel-bg);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
+  #toolbar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    z-index: 1003;
+  }
 
-#swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid #999;
-}
+  #selectedDock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
 
-#hex {
-  min-width: 88px;
-  font-weight: 700;
-}
+  #swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    border: 1px solid #9ca3af;
+    background: #000000;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
+  }
 
-#userCount {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  background: white;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  z-index: 1000;
-}
+  #hex {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    min-width: 100px;
+  }
 
-#pickerPanel {
-  position: fixed;
-  top: 60px;
-  left: 10px;
-  width: 220px;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 1000;
-}
+  #userCount {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1003;
+    background: var(--panel-bg);
+    border: 1px solid var(--line);
+    padding: 8px 10px;
+    border-radius: 14px;
+    font-size: 14px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
 
-#pickerPanel.show {
-  display: flex;
-}
+  #pickerPanel {
+    position: fixed;
+    top: 58px;
+    left: 10px;
+    width: min(48vw, 230px);
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1002;
+  }
 
-#colorWheel {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  border: 2px solid #cbd5e1;
-  background: white;
-  box-shadow: var(--shadow);
-  touch-action: none;
-}
+  #pickerPanel.show {
+    display: flex;
+  }
 
-.panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px;
-  box-shadow: var(--shadow);
-}
+  #colorWheel {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    display: block;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: #fff;
+    box-shadow: var(--shadow);
+    touch-action: none;
+  }
 
-.slider {
-  width: 100%;
-}
+  .pickerCard {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
 
-.miniLabel {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
+  .miniLabel {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
 
-#recent {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
+  #brightnessSlider,
+  #saturationSlider {
+    width: 100%;
+  }
 
-.recentColor {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #9ca3af;
-  border-radius: 7px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-}
+  #recent {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
 
-#stage {
-  position: fixed;
-  left: 50%;
-  top: 55%;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-}
+  .recentColor {
+    width: 22px;
+    height: 22px;
+    border: 1px solid #9ca3af;
+    border-radius: 7px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  }
 
-#canvasPanZoom {
-  transform-origin: center center;
-  will-change: transform;
-}
+  #canvasStage {
+    position: fixed;
+    left: 50%;
+    top: 52%;
+    transform: translate(-50%, -50%) translate(0px, 0px) scale(1);
+    transform-origin: center center;
+    z-index: 1;
+    will-change: transform;
+  }
 
-#canvas {
-  background: white;
-  border: 1px solid #ccc;
-  box-shadow: var(--shadow);
-  border-radius: 12px;
-  cursor: crosshair;
-  touch-action: none;
-}
+  #canvasPanZoom {
+    transform-origin: center center;
+    will-change: transform;
+  }
 
-#chatBox {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  width: 260px;
-  height: 260px;
-  display: flex;
-  flex-direction: column;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  z-index: 1000;
-}
+  #canvas {
+    display: block;
+    border: 1px solid #cfd8e3;
+    background: #fff;
+    touch-action: none;
+    cursor: crosshair;
+    box-shadow: var(--shadow);
+    border-radius: 12px;
+  }
 
-#chatHeader {
-  padding: 6px 8px;
-  background: #f1f5f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  #chatBox {
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    width: min(86vw, 280px);
+    height: 250px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+    z-index: 1003;
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+  }
 
-#messages {
-  flex: 1;
-  overflow: auto;
-  font-size: 13px;
-  padding: 6px;
-  line-height: 1.45;
-}
+  #chatHeader {
+    padding: 6px 8px;
+    background: #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-#chatInput {
-  border: none;
-  border-top: 1px solid #ddd;
-  padding: 8px;
-  outline: none;
-}
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 13px;
+    padding: 8px;
+    line-height: 1.45;
+  }
 
-.hidden {
-  display: none !important;
-}
+  #chatInput {
+    font-size: 16px;
+    padding: 10px 12px;
+    border: none;
+    border-top: 1px solid var(--line);
+    outline: none;
+    background: rgba(255,255,255,0.95);
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .buttonRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 </style>
 </head>
 <body>
@@ -236,7 +281,11 @@ button:active {
 <div id="home">
   <div class="homeCard">
     <h1 class="homeTitle">🌳 ドット絵の森</h1>
-    <p>みんなで同じ森に集まって、ドット絵を育てる場所。</p>
+    <p class="homeSub">
+      みんなで同じ森に集まって、<br>
+      ドット絵をゆっくり育てる場所。
+    </p>
+
     <select id="sizeSelect">
       <option value="8">8</option>
       <option value="16">16</option>
@@ -246,24 +295,26 @@ button:active {
       <option value="256">256</option>
       <option value="512">512</option>
     </select>
-    <div style="margin-top:14px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-      <button id="createRoom">🌱 部屋作成</button>
-      <button id="joinRoomBtn">🌿 入室</button>
+
+    <div class="buttonRow" style="margin-top: 14px;">
+      <button id="createRoom" type="button">🌱 部屋作成</button>
+      <button id="joinRoomBtn" type="button">🌿 入室</button>
     </div>
-    <div style="margin-top:14px;">
-      <input id="roomInput" placeholder="部屋ID" style="width:min(80vw,240px);" />
+
+    <div style="margin-top: 14px;">
+      <input id="roomInput" placeholder="部屋ID" style="width: min(80vw, 240px);" />
     </div>
   </div>
 </div>
 
 <div id="app">
   <div id="toolbar">
-    <button id="pickerBtn">🎨</button>
-    <button id="fillBtn">🪣</button>
-    <button id="eyeBtn">🧲</button>
-    <button id="undoBtn">↩</button>
-    <button id="redoBtn">↪</button>
-    <button id="saveBtn">💾 PNG</button>
+    <button id="pickerBtn" type="button">🎨</button>
+    <button id="fillBtn" type="button">🪣</button>
+    <button id="eyeBtn" type="button">🧲</button>
+    <button id="undoBtn" type="button">↩</button>
+    <button id="redoBtn" type="button">↪</button>
+    <button id="saveBtn" type="button">💾 PNG</button>
 
     <div id="selectedDock">
       <div id="swatch"></div>
@@ -276,23 +327,23 @@ button:active {
   <div id="pickerPanel">
     <canvas id="colorWheel" width="180" height="180"></canvas>
 
-    <div class="panel">
+    <div class="pickerCard">
       <div class="miniLabel">明度</div>
-      <input id="lightSlider" class="slider" type="range" min="0" max="100" value="50" />
+      <input id="brightnessSlider" type="range" min="0" max="100" value="50" />
     </div>
 
-    <div class="panel">
+    <div class="pickerCard">
       <div class="miniLabel">彩度</div>
-      <input id="satSlider" class="slider" type="range" min="0" max="100" value="100" />
+      <input id="saturationSlider" type="range" min="0" max="100" value="100" />
     </div>
 
-    <div class="panel">
+    <div class="pickerCard">
       <div class="miniLabel">最近使った色</div>
       <div id="recent"></div>
     </div>
   </div>
 
-  <div id="stage">
+  <div id="canvasStage">
     <div id="canvasPanZoom">
       <canvas id="canvas"></canvas>
     </div>
@@ -302,8 +353,8 @@ button:active {
     <div id="chatHeader">
       <span>チャット</span>
       <div style="display:flex; gap:6px;">
-        <button id="chatToggle">−</button>
-        <button id="closeChat">×</button>
+        <button id="chatToggle" type="button">−</button>
+        <button id="closeChat" type="button">×</button>
       </div>
     </div>
     <div id="messages"></div>
@@ -313,32 +364,45 @@ button:active {
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const params = new URLSearchParams(location.search);
-const room = params.get("room");
-const sizeParam = Number(params.get("size") || 32);
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(location.search);
+  const room = params.get("room");
+  const sizeParam = Number(params.get("size") || 32);
 
-window.onload = () => {
+  const home = document.getElementById("home");
+  const app = document.getElementById("app");
+
+  const createRoomBtn = document.getElementById("createRoom");
+  const joinRoomBtn = document.getElementById("joinRoomBtn");
+  const roomInput = document.getElementById("roomInput");
+  const sizeSelect = document.getElementById("sizeSelect");
+
   if (!room) {
-    document.getElementById("home").style.display = "flex";
+    home.style.display = "flex";
   } else {
-    document.getElementById("home").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    init();
+    home.style.display = "none";
+    app.style.display = "block";
+    init(room, sizeParam);
   }
-};
 
-document.getElementById("createRoom").onclick = () => {
-  const id = Math.random().toString(36).substring(2, 8);
-  const size = document.getElementById("sizeSelect").value;
-  location.href = `?room=${id}&size=${size}`;
-};
+  createRoomBtn.addEventListener("click", () => {
+    const id = Math.random().toString(36).substring(2, 8);
+    const size = sizeSelect.value;
+    location.assign(`?room=${encodeURIComponent(id)}&size=${encodeURIComponent(size)}`);
+  });
 
-document.getElementById("joinRoomBtn").onclick = () => {
-  const id = document.getElementById("roomInput").value.trim();
-  if (id) location.href = `?room=${id}`;
-};
+  joinRoomBtn.addEventListener("click", () => {
+    const id = roomInput.value.trim();
+    if (!id) return;
+    location.assign(`?room=${encodeURIComponent(id)}&size=${encodeURIComponent(sizeSelect.value)}`);
+  });
 
-function init() {
+  roomInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") joinRoomBtn.click();
+  });
+});
+
+function init(room, sizeParam) {
   const socket = io({ query: { room, size: sizeParam } });
 
   const canvasStage = document.getElementById("canvasPanZoom");
@@ -379,7 +443,6 @@ function init() {
   let pinchStartMidX = 0;
   let pinchStartMidY = 0;
 
-  let wheelDragging = false;
   let wheelMode = null;
   let wheelPointerId = null;
 
@@ -388,9 +451,6 @@ function init() {
   let selectedLight = 0.5;
   let innerCursorX = 80 + 62;
   let innerCursorY = 80;
-
-  const canvasX = 512;
-  const canvasY = 512;
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
@@ -475,7 +535,6 @@ function init() {
 
     const stack = [[startX, startY]];
     const visited = new Set();
-
     const key = (x, y) => `${x},${y}`;
 
     while (stack.length) {
@@ -500,8 +559,13 @@ function init() {
   function selectedColorFromHsl() {
     selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
     updateSelectedColorUI();
-    document.getElementById("lightSlider").value = Math.round(selectedLight * 100);
-    document.getElementById("satSlider").value = Math.round(selectedSat * 100);
+    document.getElementById("brightnessSlider").value = Math.round(selectedLight * 100);
+    document.getElementById("saturationSlider").value = Math.round(selectedSat * 100);
+  }
+
+  function syncPickerSliders() {
+    document.getElementById("brightnessSlider").value = Math.round(selectedLight * 100);
+    document.getElementById("saturationSlider").value = Math.round(selectedSat * 100);
   }
 
   /* ===== undo / redo ===== */
@@ -658,12 +722,10 @@ function init() {
 
   drawWheel();
   updateSelectedColorUI();
-  document.getElementById("lightSlider").value = Math.round(selectedLight * 100);
-  document.getElementById("satSlider").value = Math.round(selectedSat * 100);
+  syncPickerSliders();
 
   wheel.addEventListener("pointerdown", (e) => {
     e.preventDefault();
-    wheelDragging = true;
     wheelPointerId = e.pointerId;
     wheel.setPointerCapture(e.pointerId);
 
@@ -683,31 +745,29 @@ function init() {
   });
 
   wheel.addEventListener("pointermove", (e) => {
-    if (!wheelDragging || wheelPointerId !== e.pointerId) return;
+    if (wheelPointerId !== e.pointerId) return;
     if (!wheelMode) return;
     handleWheelPointer(e);
   });
 
   wheel.addEventListener("pointerup", (e) => {
     if (wheelPointerId !== e.pointerId) return;
-    wheelDragging = false;
     wheelMode = null;
     wheelPointerId = null;
   });
 
   wheel.addEventListener("pointercancel", () => {
-    wheelDragging = false;
     wheelMode = null;
     wheelPointerId = null;
   });
 
-  document.getElementById("lightSlider").addEventListener("input", (e) => {
+  document.getElementById("brightnessSlider").addEventListener("input", (e) => {
     selectedLight = Number(e.target.value) / 100;
     selectedColorFromHsl();
     drawWheel();
   });
 
-  document.getElementById("satSlider").addEventListener("input", (e) => {
+  document.getElementById("saturationSlider").addEventListener("input", (e) => {
     selectedSat = Number(e.target.value) / 100;
     selectedColorFromHsl();
     drawWheel();
@@ -761,7 +821,6 @@ function init() {
     messages.scrollTop = messages.scrollHeight;
   });
 
-  /* ===== チャット送信 ===== */
   document.getElementById("chatInput").onkeydown = (e) => {
     if (e.key === "Enter") {
       const message = e.target.value.trim();
