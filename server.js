@@ -9,7 +9,6 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 const SAVE_FILE = "save.json";
-const SIZE = 32;
 
 app.use(express.static("public"));
 
@@ -36,14 +35,27 @@ function save() {
 
 load();
 
+/* ===== ルーム作成 ===== */
+function createRoom(room, size) {
+  size = Math.max(8, Math.min(size, 512));
+
+  rooms[room] = {
+    size,
+    board: Array.from({ length: size }, () =>
+      Array(size).fill("#ffffff")
+    )
+  };
+}
+
 /* ===== 接続 ===== */
 io.on("connection", (socket) => {
   const room = socket.handshake.query.room || "default";
+  let size = Number(socket.handshake.query.size || 32);
+
+  size = Math.max(8, Math.min(size, 512));
 
   if (!rooms[room]) {
-    rooms[room] = Array.from({ length: SIZE }, () =>
-      Array(SIZE).fill("#ffffff")
-    );
+    createRoom(room, size);
   }
 
   if (!roomUsers[room]) roomUsers[room] = 0;
@@ -63,11 +75,12 @@ io.on("connection", (socket) => {
   /* ===== 描画 ===== */
   socket.on("draw", (data) => {
     const { x, y, color } = data;
+    const r = rooms[room];
 
-    if (!rooms[room]) return;
-    if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) return;
+    if (!r) return;
+    if (x < 0 || y < 0 || x >= r.size || y >= r.size) return;
 
-    rooms[room][y][x] = color;
+    r.board[y][x] = color;
 
     io.to(room).emit("draw", { x, y, color });
   });
@@ -80,7 +93,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  /* ===== 退出 ===== */
+  /* ===== 切断 ===== */
   socket.on("disconnect", () => {
     roomUsers[room]--;
 
