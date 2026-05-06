@@ -11,7 +11,7 @@ body {
   font-family: sans-serif;
 }
 
-/* ===== ホーム ===== */
+/* ===== ホーム画面 ===== */
 #home {
   position: fixed;
   inset: 0;
@@ -20,11 +20,12 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-input, button {
-  padding: 8px;
+/* ===== アプリ本体 ===== */
+#app {
+  display: none;
 }
 
 /* ===== キャンバス ===== */
@@ -44,7 +45,7 @@ canvas {
   flex-wrap: wrap;
   width: 320px;
   gap: 2px;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.95);
   padding: 8px;
   border: 1px solid #ddd;
 }
@@ -64,7 +65,9 @@ canvas {
 
 <body>
 
-<!-- ===== ホーム画面 ===== -->
+<!-- =========================
+     ホーム画面
+========================= -->
 <div id="home">
   <h1>🌳 ドット絵の森</h1>
 
@@ -74,103 +77,132 @@ canvas {
   <button id="joinRoom">参加</button>
 </div>
 
-<!-- ===== 本体 ===== -->
-<div id="app" style="display:none;">
+<!-- =========================
+     アプリ本体
+========================= -->
+<div id="app">
   <div id="palette"></div>
   <canvas id="canvas"></canvas>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+
 <script>
-/* ===== ルーム ===== */
-function getRoom() {
-  return new URLSearchParams(location.search).get("room");
-}
+/* =========================
+   ルーム取得（安全版）
+========================= */
+const room = new URLSearchParams(location.search).get("room");
 
-const room = getRoom();
+/* =========================
+   画面切り替え（重要修正）
+========================= */
+window.onload = () => {
+  if (!room) {
+    document.getElementById("home").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+  } else {
+    document.getElementById("home").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    initApp();
+  }
+};
 
-/* ===== ルームがなければホーム ===== */
-if (!room) {
-  document.getElementById("app").style.display = "none";
-} else {
-  document.getElementById("home").style.display = "none";
-}
-
-/* ===== 部屋作成 ===== */
+/* =========================
+   部屋作成
+========================= */
 document.getElementById("createRoom").onclick = () => {
   const id = Math.random().toString(36).substring(2, 8);
   location.href = "?room=" + id;
 };
 
-/* ===== 参加 ===== */
+/* =========================
+   参加
+========================= */
 document.getElementById("joinRoom").onclick = () => {
   const id = document.getElementById("roomInput").value;
   if (id) location.href = "?room=" + id;
 };
 
-/* ===== socket ===== */
-const socket = io({ query: { room } });
+/* =========================
+   メイン初期化
+========================= */
+function initApp() {
 
-/* ===== canvas ===== */
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+  /* socket */
+  const socket = io({
+    query: { room: room || "default" }
+  });
 
-const size = 32;
-const pixel = 20;
+  /* canvas */
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
 
-canvas.width = size * pixel;
-canvas.height = size * pixel;
+  const size = 32;
+  const pixel = 20;
 
-let board = [];
+  canvas.width = size * pixel;
+  canvas.height = size * pixel;
 
-/* ===== 色 ===== */
-const palette = document.getElementById("palette");
-let selected = "#000";
+  let board = [];
 
-function makeColors() {
-  const colors = ["#000","#fff","#f00","#0f0","#00f","#ff0","#0ff","#f0f"];
-  return colors;
-}
+  /* ===== パレット ===== */
+  const palette = document.getElementById("palette");
+  let selected = "#000000";
 
-makeColors().forEach(c => {
-  const d = document.createElement("div");
-  d.className = "color";
-  d.style.background = c;
+  const colors = [
+    "#000000","#ffffff","#ff0000","#00ff00","#0000ff",
+    "#ffff00","#00ffff","#ff00ff","#888888","#ffa500"
+  ];
 
-  d.onclick = () => selected = c;
+  colors.forEach(c => {
+    const d = document.createElement("div");
+    d.className = "color";
+    d.style.background = c;
 
-  palette.appendChild(d);
-});
+    d.onclick = () => {
+      selected = c;
+      document.querySelectorAll(".color").forEach(el => el.classList.remove("selected"));
+      d.classList.add("selected");
+    };
 
-/* ===== 描画 ===== */
-function draw() {
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      ctx.fillStyle = board[y][x];
-      ctx.fillRect(x*pixel, y*pixel, pixel, pixel);
+    palette.appendChild(d);
+  });
+
+  /* ===== 描画 ===== */
+  function draw() {
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        ctx.fillStyle = board[y][x];
+        ctx.fillRect(x * pixel, y * pixel, pixel, pixel);
+      }
     }
   }
+
+  /* ===== 初期データ ===== */
+  socket.on("init", (data) => {
+    board = data;
+    draw();
+  });
+
+  /* ===== 更新 ===== */
+  socket.on("draw", (d) => {
+    if (!board[d.y]) return;
+    board[d.y][d.x] = d.color;
+    draw();
+  });
+
+  /* ===== クリック描画 ===== */
+  canvas.onclick = (e) => {
+    const x = Math.floor(e.offsetX / pixel);
+    const y = Math.floor(e.offsetY / pixel);
+
+    socket.emit("draw", {
+      x,
+      y,
+      color: selected
+    });
+  };
 }
-
-/* ===== 初期 ===== */
-socket.on("init", (data) => {
-  board = data;
-  draw();
-});
-
-/* ===== 更新 ===== */
-socket.on("draw", (d) => {
-  board[d.y][d.x] = d.color;
-  draw();
-});
-
-/* ===== クリック ===== */
-canvas.onclick = (e) => {
-  const x = Math.floor(e.offsetX / pixel);
-  const y = Math.floor(e.offsetY / pixel);
-
-  socket.emit("draw", { x, y, color: selected });
-};
 </script>
 
 </body>
