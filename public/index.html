@@ -9,7 +9,7 @@
 <style>
 body {
   margin: 0;
-  background: #ffffff;
+  background: #fff;
   font-family: sans-serif;
 }
 
@@ -22,16 +22,9 @@ body {
   justify-content: center;
   align-items: center;
   gap: 12px;
-  font-size: 18px;
 }
 
-#home button,
-#home input {
-  font-size: 18px;
-  padding: 12px;
-}
-
-/* ===== アプリ ===== */
+/* ===== 本体 ===== */
 #app {
   display: none;
 }
@@ -40,7 +33,6 @@ body {
 canvas {
   display: block;
   margin: auto;
-  background: white;
   border: 1px solid #ccc;
   touch-action: none;
 }
@@ -57,7 +49,6 @@ canvas {
   gap: 4px;
   padding: 8px;
   background: rgba(255,255,255,0.95);
-  border: 1px solid #ddd;
 }
 
 .color {
@@ -109,7 +100,7 @@ canvas {
   <button id="joinRoom">🌿 入る</button>
 </div>
 
-<!-- ===== 本体 ===== -->
+<!-- ===== アプリ ===== -->
 <div id="app">
   <div id="palette"></div>
   <canvas id="canvas"></canvas>
@@ -128,7 +119,6 @@ const room = new URLSearchParams(location.search).get("room");
 window.onload = () => {
   if (!room) {
     document.getElementById("home").style.display = "flex";
-    document.getElementById("app").style.display = "none";
   } else {
     document.getElementById("home").style.display = "none";
     document.getElementById("app").style.display = "block";
@@ -136,7 +126,6 @@ window.onload = () => {
   }
 };
 
-/* ===== ルーム ===== */
 document.getElementById("createRoom").onclick = () => {
   const id = Math.random().toString(36).substring(2, 8);
   location.href = "?room=" + id;
@@ -146,6 +135,17 @@ document.getElementById("joinRoom").onclick = () => {
   const id = document.getElementById("roomInput").value;
   if (id) location.href = "?room=" + id;
 };
+
+/* ===== ピンチズーム ===== */
+let scale = 1;
+let startDist = 0;
+
+function getDist(t) {
+  return Math.hypot(
+    t[0].clientX - t[1].clientX,
+    t[0].clientY - t[1].clientY
+  );
+}
 
 function init() {
   const socket = io({ query: { room } });
@@ -160,24 +160,21 @@ function init() {
   canvas.height = size * pixel;
 
   let board = [];
-  let selected = "#000000";
+  let selected = "#000";
 
-  /* ===== パレット ===== */
   const palette = document.getElementById("palette");
 
-  const colors = generateColors();
-
-  function generateColors() {
-    const colors = [];
-    const steps = [0, 51, 102, 153, 204, 255];
-
-    for (let r of steps)
-      for (let g of steps)
-        for (let b of steps)
-          colors.push(`rgb(${r},${g},${b})`);
-
-    return colors;
-  }
+  const colors = (() => {
+    const c = [];
+    [0,51,102,153,204,255].forEach(r =>
+      [0,51,102,153,204,255].forEach(g =>
+        [0,51,102,153,204,255].forEach(b =>
+          c.push(`rgb(${r},${g},${b})`)
+        )
+      )
+    );
+    return c;
+  })();
 
   colors.forEach(c => {
     const d = document.createElement("div");
@@ -187,44 +184,33 @@ function init() {
     palette.appendChild(d);
   });
 
-  /* ===== 描画 ===== */
   function draw() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         ctx.fillStyle = board[y][x];
         ctx.fillRect(x*pixel, y*pixel, pixel, pixel);
-
-        ctx.strokeStyle = "#e0e0e0";
+        ctx.strokeStyle = "#ddd";
         ctx.strokeRect(x*pixel, y*pixel, pixel, pixel);
       }
     }
   }
 
-  socket.on("init", (data) => {
-    board = data;
-    draw();
-  });
+  socket.on("init", d => { board = d; draw(); });
+  socket.on("draw", d => { board[d.y][d.x] = d.color; draw(); });
 
-  socket.on("draw", (d) => {
-    board[d.y][d.x] = d.color;
-    draw();
-  });
-
-  canvas.onclick = (e) => {
-    const x = Math.floor(e.offsetX / pixel);
-    const y = Math.floor(e.offsetY / pixel);
-
+  canvas.onclick = e => {
+    const x = Math.floor(e.offsetX / pixel / scale);
+    const y = Math.floor(e.offsetY / pixel / scale);
     socket.emit("draw", { x, y, color: selected });
   };
 
-  /* ===== 人数 ===== */
-  socket.on("users", (count) => {
-    document.getElementById("userCount").innerText =
-      `👥 ${count}人オンライン`;
+  socket.on("users", c => {
+    document.getElementById("userCount").innerText = `👥 ${c}人`;
   });
 
-  /* ===== チャット ===== */
-  document.getElementById("chatInput").addEventListener("keydown", (e) => {
+  document.getElementById("chatInput").onkeydown = e => {
     if (e.key === "Enter") {
       socket.emit("chat", {
         user: "名無し",
@@ -232,19 +218,12 @@ function init() {
       });
       e.target.value = "";
     }
-  });
+  };
 
-  socket.on("chat", (data) => {
+  socket.on("chat", d => {
     const div = document.createElement("div");
-
-    if (data.user === "system") {
-      div.style.color = "#888";
-      div.style.fontStyle = "italic";
-      div.textContent = data.message;
-    } else {
-      div.textContent = `${data.user}: ${data.message}`;
-    }
-
+    div.textContent =
+      d.user === "system" ? d.message : `${d.user}: ${d.message}`;
     document.getElementById("messages").appendChild(div);
   });
 }
