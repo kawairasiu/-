@@ -1,252 +1,176 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ドット絵の森</title>
+<meta charset="UTF-8">
+<title>ドット絵の森</title>
 
-  <style>
-    body {
-      margin: 0;
-      background: #1e1e1e;
-      overflow: hidden;
-      font-family: sans-serif;
-    }
+<style>
+body {
+  margin: 0;
+  background: #ffffff;
+  font-family: sans-serif;
+}
 
-    canvas {
-      display: block;
-      margin: auto;
-      background: #000;
-      border: 1px solid #444;
-    }
+/* ===== ホーム ===== */
+#home {
+  position: fixed;
+  inset: 0;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
 
-    /* ===== パレット ===== */
-    #palette {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      width: 340px;
-      max-height: 70vh;
-      overflow-y: auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      padding: 10px;
-      background: rgba(0,0,0,0.7);
-      border-radius: 8px;
-    }
+input, button {
+  padding: 8px;
+}
 
-    .color {
-      width: 14px;
-      height: 14px;
-      cursor: pointer;
-      border: 1px solid #333;
-      box-sizing: border-box;
-    }
+/* ===== キャンバス ===== */
+canvas {
+  display: block;
+  margin: auto;
+  background: white;
+  border: 1px solid #ccc;
+}
 
-    .selected {
-      border: 2px solid white;
-    }
+/* ===== パレット ===== */
+#palette {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  width: 320px;
+  gap: 2px;
+  background: rgba(255,255,255,0.9);
+  padding: 8px;
+  border: 1px solid #ddd;
+}
 
-    /* ===== UI ===== */
-    #ui {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+.color {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  border: 1px solid #aaa;
+}
 
-    input {
-      padding: 6px;
-      border-radius: 4px;
-      border: none;
-    }
-
-    button {
-      padding: 6px 10px;
-      background: #333;
-      color: white;
-      border: 1px solid #555;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    button:hover {
-      background: #444;
-    }
-
-    /* タイトル */
-    #title {
-      position: fixed;
-      top: 10px;
-      right: 20px;
-      color: white;
-      font-size: 18px;
-      opacity: 0.8;
-    }
-  </style>
+.selected {
+  border: 2px solid black;
+}
+</style>
 </head>
 
 <body>
 
-<div id="title">🌳 ドット絵の森</div>
+<!-- ===== ホーム画面 ===== -->
+<div id="home">
+  <h1>🌳 ドット絵の森</h1>
 
-<!-- パレット -->
-<div id="palette"></div>
+  <button id="createRoom">部屋を作る</button>
 
-<!-- UI -->
-<div id="ui">
-  <input id="nameInput" placeholder="名前" />
-  <button id="saveBtn">保存</button>
+  <input id="roomInput" placeholder="部屋ID" />
+  <button id="joinRoom">参加</button>
 </div>
 
-<!-- キャンバス -->
-<canvas id="canvas"></canvas>
+<!-- ===== 本体 ===== -->
+<div id="app" style="display:none;">
+  <div id="palette"></div>
+  <canvas id="canvas"></canvas>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-/* =========================
-   ルーム取得
-========================= */
-const params = new URLSearchParams(location.search);
-const room = params.get("room") || "default";
-
-/* =========================
-   socket接続
-========================= */
-const socket = io({
-  query: { room }
-});
-
-/* =========================
-   ユーザー
-========================= */
-let username = "anon";
-
-document.getElementById("nameInput").addEventListener("input", (e) => {
-  username = e.target.value;
-});
-
-/* =========================
-   256色生成
-========================= */
-function generateColors() {
-  const colors = [];
-  for (let r = 0; r < 256; r += 51) {
-    for (let g = 0; g < 256; g += 51) {
-      for (let b = 0; b < 256; b += 51) {
-        colors.push(`rgb(${r},${g},${b})`);
-      }
-    }
-  }
-  return colors;
+/* ===== ルーム ===== */
+function getRoom() {
+  return new URLSearchParams(location.search).get("room");
 }
 
-const colors = generateColors();
+const room = getRoom();
 
-/* =========================
-   パレット生成
-========================= */
-let selectedColor = colors[0];
-const palette = document.getElementById("palette");
+/* ===== ルームがなければホーム ===== */
+if (!room) {
+  document.getElementById("app").style.display = "none";
+} else {
+  document.getElementById("home").style.display = "none";
+}
 
-colors.forEach(color => {
-  const btn = document.createElement("div");
-  btn.className = "color";
-  btn.style.background = color;
+/* ===== 部屋作成 ===== */
+document.getElementById("createRoom").onclick = () => {
+  const id = Math.random().toString(36).substring(2, 8);
+  location.href = "?room=" + id;
+};
 
-  btn.addEventListener("click", () => {
-    selectedColor = color;
+/* ===== 参加 ===== */
+document.getElementById("joinRoom").onclick = () => {
+  const id = document.getElementById("roomInput").value;
+  if (id) location.href = "?room=" + id;
+};
 
-    document.querySelectorAll(".color")
-      .forEach(b => b.classList.remove("selected"));
+/* ===== socket ===== */
+const socket = io({ query: { room } });
 
-    btn.classList.add("selected");
-  });
-
-  palette.appendChild(btn);
-});
-
-/* =========================
-   canvas設定
-========================= */
+/* ===== canvas ===== */
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const gridSize = 32;
-const pixelSize = 18;
+const size = 32;
+const pixel = 20;
 
-canvas.width = gridSize * pixelSize;
-canvas.height = gridSize * pixelSize;
+canvas.width = size * pixel;
+canvas.height = size * pixel;
 
 let board = [];
 
-/* =========================
-   描画
-========================= */
-function drawBoard() {
-  for (let y = 0; y < gridSize; y++) {
-    for (let x = 0; x < gridSize; x++) {
-      ctx.fillStyle = board[y][x];
-      ctx.fillRect(
-        x * pixelSize,
-        y * pixelSize,
-        pixelSize,
-        pixelSize
-      );
+/* ===== 色 ===== */
+const palette = document.getElementById("palette");
+let selected = "#000";
 
-      ctx.strokeStyle = "#222";
-      ctx.strokeRect(
-        x * pixelSize,
-        y * pixelSize,
-        pixelSize,
-        pixelSize
-      );
+function makeColors() {
+  const colors = ["#000","#fff","#f00","#0f0","#00f","#ff0","#0ff","#f0f"];
+  return colors;
+}
+
+makeColors().forEach(c => {
+  const d = document.createElement("div");
+  d.className = "color";
+  d.style.background = c;
+
+  d.onclick = () => selected = c;
+
+  palette.appendChild(d);
+});
+
+/* ===== 描画 ===== */
+function draw() {
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      ctx.fillStyle = board[y][x];
+      ctx.fillRect(x*pixel, y*pixel, pixel, pixel);
     }
   }
 }
 
-/* =========================
-   初期データ受信
-========================= */
+/* ===== 初期 ===== */
 socket.on("init", (data) => {
   board = data;
-  drawBoard();
+  draw();
 });
 
-/* =========================
-   描画反映
-========================= */
-socket.on("draw", (data) => {
-  board[data.y][data.x] = data.color;
-  drawBoard();
+/* ===== 更新 ===== */
+socket.on("draw", (d) => {
+  board[d.y][d.x] = d.color;
+  draw();
 });
 
-/* =========================
-   描画送信
-========================= */
-canvas.addEventListener("click", (e) => {
-  const rect = canvas.getBoundingClientRect();
+/* ===== クリック ===== */
+canvas.onclick = (e) => {
+  const x = Math.floor(e.offsetX / pixel);
+  const y = Math.floor(e.offsetY / pixel);
 
-  const x = Math.floor((e.clientX - rect.left) / pixelSize);
-  const y = Math.floor((e.clientY - rect.top) / pixelSize);
-
-  socket.emit("draw", {
-    x,
-    y,
-    color: selectedColor,
-    user: username
-  });
-});
-
-/* =========================
-   保存ボタン
-========================= */
-document.getElementById("saveBtn").addEventListener("click", () => {
-  socket.emit("save");
-});
-
+  socket.emit("draw", { x, y, color: selected });
+};
 </script>
 
 </body>
