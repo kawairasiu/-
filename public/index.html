@@ -1,248 +1,555 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ドット絵の森</title>
 
 <style>
-body{
-  margin:0;
-  overflow:hidden;
-  font-family:sans-serif;
-  background:#fff;
-}
+  body {
+    margin: 0;
+    background: #fff;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
 
-/* ===== ホーム ===== */
-#home{
-  position:fixed;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:10px;
-}
+  #home {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+  }
 
-/* ===== メイン ===== */
-#app{
-  display:none;
-  width:100vw;
-  height:100vh;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-}
+  #app {
+    display: none;
+  }
 
-/* ===== canvas ===== */
-canvas{
-  border:1px solid #ddd;
-  touch-action:none;
-}
+  #toolbar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    z-index: 1002;
+  }
 
-/* ===== UI ===== */
-#topbar{
-  position:fixed;
-  top:10px;
-  left:10px;
-  display:flex;
-  gap:8px;
-}
+  #userCount {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1002;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
 
-/* ===== 名前 ===== */
-#nameTag{
-  position:fixed;
-  top:10px;
-  right:10px;
-  background:#fff;
-  border:1px solid #ccc;
-  padding:4px 8px;
-}
+  #colorWheel {
+    position: fixed;
+    top: 58px;
+    left: 10px;
+    width: 180px;
+    height: 180px;
+    display: none;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    background: #fff;
+    z-index: 1001;
+    touch-action: none;
+  }
 
-/* ===== チャット ===== */
-#chat{
-  position:fixed;
-  right:10px;
-  bottom:10px;
-  width:260px;
-  height:240px;
-  border:1px solid #ccc;
-  display:none;
-  flex-direction:column;
-  background:#fff;
-}
+  #colorWheel.show {
+    display: block;
+  }
 
-#msgs{
-  flex:1;
-  overflow:auto;
-  font-size:13px;
-  padding:5px;
-}
+  #recent {
+    position: fixed;
+    top: 250px;
+    left: 10px;
+    display: flex;
+    gap: 4px;
+    z-index: 1001;
+  }
 
-#input{
-  padding:8px;
-  border:none;
-  border-top:1px solid #ccc;
-}
+  #canvas {
+    display: block;
+    margin: 70px auto 0;
+    border: 1px solid #ccc;
+    background: #fff;
+    touch-action: none;
+    width: min(90vw, 512px);
+    height: auto;
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  #chatBox {
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    width: 260px;
+    height: 240px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    background: white;
+    z-index: 1002;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 13px;
+    padding: 6px;
+  }
+
+  #chatInput {
+    font-size: 16px;
+    padding: 8px;
+    border: none;
+    border-top: 1px solid #ccc;
+  }
+
+  .recentColor {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #999;
+  }
+
+  button, select, input {
+    font-size: 16px;
+    padding: 6px 8px;
+  }
 </style>
 </head>
-
 <body>
 
-<!-- ===== HOME ===== -->
 <div id="home">
-  <h2>🌳 ドット絵の森</h2>
+  <h1>🌳 ドット絵の森</h1>
 
-  <input id="name" placeholder="名前">
-
-  <select id="size">
-    <option>8</option>
-    <option>16</option>
-    <option selected>32</option>
-    <option>64</option>
-    <option>128</option>
-    <option>256</option>
-    <option>512</option>
+  <select id="sizeSelect">
+    <option value="8">8</option>
+    <option value="16">16</option>
+    <option value="32" selected>32</option>
+    <option value="64">64</option>
+    <option value="128">128</option>
+    <option value="256">256</option>
+    <option value="512">512</option>
   </select>
 
-  <button onclick="create()">作成</button>
-  <input id="joinId" placeholder="部屋ID">
-  <button onclick="join()">入室</button>
+  <button id="createRoom">🌱 部屋作成</button>
+
+  <input id="roomInput" placeholder="部屋ID" />
+  <button id="joinRoom">🌿 入室</button>
 </div>
 
-<!-- ===== APP ===== -->
 <div id="app">
+  <div id="toolbar">
+    <button id="togglePicker">🎨</button>
+    <button id="eyeBtn">🧲</button>
+    <button id="undoBtn">↩</button>
+    <button id="redoBtn">↪</button>
+    <button id="saveBtn">💾 PNG</button>
+  </div>
 
-<div id="topbar">
-  <button onclick="toggleChat()">💬</button>
-</div>
+  <div id="userCount">👥 0人オンライン</div>
 
-<div id="nameTag"></div>
+  <canvas id="colorWheel" width="180" height="180"></canvas>
+  <div id="recent"></div>
 
-<canvas id="c"></canvas>
+  <canvas id="canvas"></canvas>
 
-<div id="chat">
-  <div id="msgs"></div>
-  <input id="input" placeholder="chat">
-</div>
-
-<!-- ibis風カラー -->
-<canvas id="wheel" width="180" height="180"></canvas>
-
+  <div id="chatBox">
+    <div id="messages"></div>
+    <input id="chatInput" placeholder="メッセージ" />
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
-let socket;
-let board=[];
-let size=32;
-let selected="#000";
+const params = new URLSearchParams(location.search);
+const room = params.get("room");
+const sizeParam = Number(params.get("size") || 32);
 
-let undo=[],redo=[];
+window.onload = () => {
+  if (!room) {
+    document.getElementById("home").style.display = "flex";
+  } else {
+    document.getElementById("home").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    init();
+  }
+};
 
-/* ===== room ===== */
-function create(){
-  const id=Math.random().toString(36).slice(2,8);
-  const name=document.getElementById("name").value||"名無し";
-  const s=document.getElementById("size").value;
+document.getElementById("createRoom").onclick = () => {
+  const id = Math.random().toString(36).substring(2, 8);
+  const size = document.getElementById("sizeSelect").value;
+  location.href = `?room=${id}&size=${size}`;
+};
 
-  location.href=`?room=${id}&size=${s}&name=${name}`;
-}
+document.getElementById("joinRoom").onclick = () => {
+  const id = document.getElementById("roomInput").value.trim();
+  if (id) location.href = `?room=${id}`;
+};
 
-function join(){
-  const id=document.getElementById("joinId").value;
-  location.href=`?room=${id}`;
-}
+function init() {
+  const socket = io({ query: { room, size: sizeParam } });
 
-/* ===== init ===== */
-const p=new URLSearchParams(location.search);
-const room=p.get("room");
-const name=p.get("name");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
 
-window.onload=()=>{
+  const CANVAS_SIZE = 512;
+  canvas.width = CANVAS_SIZE;
+  canvas.height = CANVAS_SIZE;
 
-if(!room){
-  document.getElementById("home").style.display="flex";
-  return;
-}
+  let GRID_SIZE = 32;
+  let CELL_SIZE = CANVAS_SIZE / GRID_SIZE;
+  let board = [];
 
-document.getElementById("home").style.display="none";
-document.getElementById("app").style.display="flex";
+  let selected = "#000000";
+  let eyeDrop = false;
 
-socket=io({query:{room,name}});
+  let undoStack = [];
+  let redoStack = [];
 
-document.getElementById("nameTag").textContent=name||"名無し";
+  let viewScale = 1;
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
 
-const c=document.getElementById("c");
-const ctx=c.getContext("2d");
+  const MAX_HISTORY = 50;
 
-c.width=512;
-c.height=512;
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
 
-/* ===== init ===== */
-socket.on("init",d=>{
-  board=d.board;
-  size=d.size;
-  draw();
-});
+  function applyZoom() {
+    canvas.style.transform = `scale(${viewScale})`;
+  }
 
-/* ===== draw ===== */
-function draw(){
-  const cell=512/size;
+  function pushUndoSnapshot() {
+    undoStack.push(JSON.stringify(board));
+    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    redoStack = [];
+  }
 
-  ctx.clearRect(0,0,512,512);
+  function addRecentColor(color) {
+    const div = document.getElementById("recent");
+    const existing = Array.from(div.querySelectorAll(".recentColor")).map((el) => el.dataset.color);
 
-  for(let y=0;y<size;y++){
-    for(let x=0;x<size;x++){
+    const next = [color, ...existing.filter((c) => c !== color)].slice(0, 4);
+    div.innerHTML = "";
 
-      ctx.fillStyle=board[y][x];
+    next.forEach((c) => {
+      const box = document.createElement("div");
+      box.className = "recentColor";
+      box.dataset.color = c;
+      box.style.background = c;
+      box.onclick = () => {
+        selected = c;
+      };
+      div.appendChild(box);
+    });
+  }
 
-      ctx.fillRect(x*cell,y*cell,cell,cell);
-      ctx.strokeStyle="#eee";
-      ctx.strokeRect(x*cell,y*cell,cell,cell);
+  function renderCell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+
+    if (CELL_SIZE >= 4) {
+      ctx.strokeStyle = "#eee";
+      ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
   }
-}
 
-/* ===== draw sync ===== */
-socket.on("draw",d=>{
-  board[d.y][d.x]=d.color;
-  draw();
-});
+  function drawFull() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-/* ===== click ===== */
-c.onclick=(e)=>{
-
-const cell=512/size;
-
-const x=Math.floor(e.offsetX/cell);
-const y=Math.floor(e.offsetY/cell);
-
-socket.emit("draw",{x,y,color:selected});
-};
-
-/* ===== chat ===== */
-function toggleChat(){
-  const c=document.getElementById("chat");
-  c.style.display=c.style.display==="flex"?"none":"flex";
-}
-
-document.getElementById("input").onkeydown=e=>{
-  if(e.key==="Enter"){
-    socket.emit("chat",{message:e.target.value});
-    e.target.value="";
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        renderCell(x, y, board[y][x]);
+      }
+    }
   }
-};
 
-socket.on("chat",d=>{
-  const div=document.createElement("div");
-  div.textContent=`${d.user}: ${d.message}`;
-  document.getElementById("msgs").appendChild(div);
-});
+  function getCanvasPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - rect.left) * canvas.width / rect.width) / CELL_SIZE);
+    const y = Math.floor(((e.clientY - rect.top) * canvas.height / rect.height) / CELL_SIZE);
+    return { x, y };
+  }
 
-};
+  /* ===== 2段カラーサークル ===== */
+  const wheel = document.getElementById("colorWheel");
+  const wctx = wheel.getContext("2d");
+
+  const W = wheel.width;
+  const H = wheel.height;
+  const cx = W / 2;
+  const cy = H / 2;
+  const outerR = 88;
+  const innerR = 62;
+
+  let selectedHue = 0;
+  let selectedSat = 1;
+  let selectedLight = 0.5;
+  let innerCursorX = cx + innerR;
+  let innerCursorY = cy;
+
+  function updateSelectedColor() {
+    selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
+  }
+
+  function drawWheel() {
+    wctx.clearRect(0, 0, W, H);
+
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const dx = x + 0.5 - cx;
+        const dy = y + 0.5 - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > outerR || dist < innerR) continue;
+
+        const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+        wctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        wctx.fillRect(x, y, 1, 1);
+      }
+    }
+
+    for (let y = -innerR; y <= innerR; y++) {
+      for (let x = -innerR; x <= innerR; x++) {
+        const dist = Math.sqrt(x * x + y * y);
+        if (dist > innerR) continue;
+
+        const sat = dist / innerR;
+        const light = 1 - ((y + innerR) / (innerR * 2));
+
+        wctx.fillStyle = `hsl(${selectedHue}, ${sat * 100}%, ${light * 100}%)`;
+        wctx.fillRect(cx + x, cy + y, 1, 1);
+      }
+    }
+
+    const hueRad = (selectedHue * Math.PI) / 180;
+    const hueCursorR = (innerR + outerR) / 2;
+    const hueCursorX = cx + Math.cos(hueRad) * hueCursorR;
+    const hueCursorY = cy + Math.sin(hueRad) * hueCursorR;
+
+    wctx.beginPath();
+    wctx.arc(hueCursorX, hueCursorY, 6, 0, Math.PI * 2);
+    wctx.strokeStyle = "#000";
+    wctx.lineWidth = 2;
+    wctx.stroke();
+
+    wctx.beginPath();
+    wctx.arc(hueCursorX, hueCursorY, 3, 0, Math.PI * 2);
+    wctx.strokeStyle = "#fff";
+    wctx.lineWidth = 2;
+    wctx.stroke();
+
+    wctx.beginPath();
+    wctx.arc(innerCursorX, innerCursorY, 6, 0, Math.PI * 2);
+    wctx.strokeStyle = "#000";
+    wctx.lineWidth = 2;
+    wctx.stroke();
+
+    wctx.beginPath();
+    wctx.arc(innerCursorX, innerCursorY, 3, 0, Math.PI * 2);
+    wctx.strokeStyle = "#fff";
+    wctx.lineWidth = 2;
+    wctx.stroke();
+  }
+
+  function setHueFromPoint(x, y) {
+    selectedHue = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    updateSelectedColor();
+    drawWheel();
+  }
+
+  function setColorFromPoint(x, y) {
+    const dist = Math.sqrt(x * x + y * y);
+    selectedSat = clamp(dist / innerR, 0, 1);
+    selectedLight = clamp(1 - ((y + innerR) / (innerR * 2)), 0, 1);
+
+    selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
+    innerCursorX = cx + x;
+    innerCursorY = cy + y;
+    drawWheel();
+  }
+
+  drawWheel();
+  updateSelectedColor();
+
+  document.getElementById("togglePicker").onclick = () => {
+    wheel.classList.toggle("show");
+  };
+
+  wheel.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    const rect = wheel.getBoundingClientRect();
+    const x = e.clientX - rect.left - cx;
+    const y = e.clientY - rect.top - cy;
+    const dist = Math.sqrt(x * x + y * y);
+
+    if (dist > innerR && dist <= outerR) {
+      setHueFromPoint(x, y);
+      return;
+    }
+
+    if (dist <= innerR) {
+      setColorFromPoint(x, y);
+    }
+  });
+
+  /* ===== スポイト ===== */
+  document.getElementById("eyeBtn").onclick = () => {
+    eyeDrop = !eyeDrop;
+  };
+
+  /* ===== undo / redo ===== */
+  document.getElementById("undoBtn").onclick = () => {
+    if (undoStack.length === 0) return;
+
+    redoStack.push(JSON.stringify(board));
+    const previous = JSON.parse(undoStack.pop());
+
+    board = previous;
+    GRID_SIZE = board.length;
+    CELL_SIZE = CANVAS_SIZE / GRID_SIZE;
+    drawFull();
+
+    socket.emit("setBoard", { board });
+  };
+
+  document.getElementById("redoBtn").onclick = () => {
+    if (redoStack.length === 0) return;
+
+    undoStack.push(JSON.stringify(board));
+    const next = JSON.parse(redoStack.pop());
+
+    board = next;
+    GRID_SIZE = board.length;
+    CELL_SIZE = CANVAS_SIZE / GRID_SIZE;
+    drawFull();
+
+    socket.emit("setBoard", { board });
+  };
+
+  /* ===== PNG保存 ===== */
+  document.getElementById("saveBtn").onclick = () => {
+    const a = document.createElement("a");
+    a.download = `dot-art-${Date.now()}.png`;
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+  };
+
+  /* ===== ピンチズーム ===== */
+  function getTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      pinchStartDist = getTouchDistance(e.touches);
+      pinchStartScale = viewScale;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dist = getTouchDistance(e.touches);
+      if (pinchStartDist > 0) {
+        viewScale = clamp(pinchStartScale * (dist / pinchStartDist), 0.5, 3);
+        applyZoom();
+      }
+    }
+  }, { passive: false });
+
+  canvas.addEventListener("touchend", (e) => {
+    if (e.touches.length < 2) {
+      pinchStartDist = 0;
+    }
+  });
+
+  /* ===== 初期データ ===== */
+  socket.on("init", (data) => {
+    board = data.board;
+    GRID_SIZE = data.size;
+    CELL_SIZE = CANVAS_SIZE / GRID_SIZE;
+    drawFull();
+  });
+
+  /* ===== 共有更新 ===== */
+  socket.on("draw", (d) => {
+    if (d.x < 0 || d.y < 0 || d.x >= GRID_SIZE || d.y >= GRID_SIZE) return;
+    board[d.y][d.x] = d.color;
+    renderCell(d.x, d.y, d.color);
+  });
+
+  socket.on("boardUpdate", (d) => {
+    board = d.board;
+    GRID_SIZE = d.size || board.length;
+    CELL_SIZE = CANVAS_SIZE / GRID_SIZE;
+    drawFull();
+  });
+
+  /* ===== 描画 ===== */
+  canvas.onclick = (e) => {
+    const { x, y } = getCanvasPos(e);
+
+    if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) return;
+
+    if (eyeDrop) {
+      selected = board[y][x];
+      addRecentColor(selected);
+      eyeDrop = false;
+      return;
+    }
+
+    pushUndoSnapshot();
+
+    board[y][x] = selected;
+    renderCell(x, y, selected);
+    socket.emit("draw", { x, y, color: selected });
+    addRecentColor(selected);
+  };
+
+  /* ===== 人数 ===== */
+  socket.on("users", (count) => {
+    document.getElementById("userCount").innerText = `👥 ${count}人オンライン`;
+  });
+
+  /* ===== チャット ===== */
+  document.getElementById("chatInput").onkeydown = (e) => {
+    if (e.key === "Enter") {
+      const message = e.target.value.trim();
+      if (!message) return;
+
+      socket.emit("chat", {
+        user: "名無し",
+        message
+      });
+
+      e.target.value = "";
+    }
+  };
+
+  socket.on("chat", (d) => {
+    const div = document.createElement("div");
+    div.textContent = d.user === "system" ? d.message : `${d.user}: ${d.message}`;
+    document.getElementById("messages").appendChild(div);
+    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  });
+}
 </script>
 
 </body>
