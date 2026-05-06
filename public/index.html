@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ドット絵の森</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #1e1e1e;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+      background: #000;
+      border: 1px solid #444;
+    }
+
+    /* ===== パレット ===== */
+    #palette {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 340px;
+      max-height: 70vh;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 8px;
+    }
+
+    .color {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      border: 1px solid #333;
+      box-sizing: border-box;
+    }
+
+    .selected {
+      border: 2px solid white;
+    }
+
+    /* ===== UI ===== */
+    #ui {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input {
+      padding: 6px;
+      border-radius: 4px;
+      border: none;
+    }
+
+    button {
+      padding: 6px 10px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #444;
+    }
+
+    /* タイトル */
+    #title {
+      position: fixed;
+      top: 10px;
+      right: 20px;
+      color: white;
+      font-size: 18px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="title">🌳 ドット絵の森</div>
+
+<!-- パレット -->
+<div id="palette"></div>
+
+<!-- UI -->
+<div id="ui">
+  <input id="nameInput" placeholder="名前" />
+  <button id="saveBtn">保存</button>
+</div>
+
+<!-- キャンバス -->
+<canvas id="canvas"></canvas>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+/* =========================
+   ルーム取得
+========================= */
+const params = new URLSearchParams(location.search);
+const room = params.get("room") || "default";
+
+/* =========================
+   socket接続
+========================= */
+const socket = io({
+  query: { room }
+});
+
+/* =========================
+   ユーザー
+========================= */
+let username = "anon";
+
+document.getElementById("nameInput").addEventListener("input", (e) => {
+  username = e.target.value;
+});
+
+/* =========================
+   256色生成
+========================= */
+function generateColors() {
+  const colors = [];
+  for (let r = 0; r < 256; r += 51) {
+    for (let g = 0; g < 256; g += 51) {
+      for (let b = 0; b < 256; b += 51) {
+        colors.push(`rgb(${r},${g},${b})`);
+      }
+    }
+  }
+  return colors;
+}
+
+const colors = generateColors();
+
+/* =========================
+   パレット生成
+========================= */
+let selectedColor = colors[0];
+const palette = document.getElementById("palette");
+
+colors.forEach(color => {
+  const btn = document.createElement("div");
+  btn.className = "color";
+  btn.style.background = color;
+
+  btn.addEventListener("click", () => {
+    selectedColor = color;
+
+    document.querySelectorAll(".color")
+      .forEach(b => b.classList.remove("selected"));
+
+    btn.classList.add("selected");
+  });
+
+  palette.appendChild(btn);
+});
+
+/* =========================
+   canvas設定
+========================= */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const gridSize = 32;
+const pixelSize = 18;
+
+canvas.width = gridSize * pixelSize;
+canvas.height = gridSize * pixelSize;
+
+let board = [];
+
+/* =========================
+   描画
+========================= */
+function drawBoard() {
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      ctx.fillStyle = board[y][x];
+      ctx.fillRect(
+        x * pixelSize,
+        y * pixelSize,
+        pixelSize,
+        pixelSize
+      );
+
+      ctx.strokeStyle = "#222";
+      ctx.strokeRect(
+        x * pixelSize,
+        y * pixelSize,
+        pixelSize,
+        pixelSize
+      );
+    }
+  }
+}
+
+/* =========================
+   初期データ受信
+========================= */
+socket.on("init", (data) => {
+  board = data;
+  drawBoard();
+});
+
+/* =========================
+   描画反映
+========================= */
+socket.on("draw", (data) => {
+  board[data.y][data.x] = data.color;
+  drawBoard();
+});
+
+/* =========================
+   描画送信
+========================= */
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+
+  const x = Math.floor((e.clientX - rect.left) / pixelSize);
+  const y = Math.floor((e.clientY - rect.top) / pixelSize);
+
+  socket.emit("draw", {
+    x,
+    y,
+    color: selectedColor,
+    user: username
+  });
+});
+
+/* =========================
+   保存ボタン
+========================= */
+document.getElementById("saveBtn").addEventListener("click", () => {
+  socket.emit("save");
+});
+
+</script>
+
+</body>
+</html>
