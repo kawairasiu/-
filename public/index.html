@@ -9,11 +9,10 @@
 <style>
 body {
   margin: 0;
-  background: white;
+  background: #fff;
   font-family: sans-serif;
 }
 
-/* ===== ホーム ===== */
 #home {
   position: fixed;
   inset: 0;
@@ -24,7 +23,6 @@ body {
   gap: 12px;
 }
 
-/* ===== 本体 ===== */
 #app {
   display: none;
 }
@@ -37,32 +35,19 @@ canvas {
   touch-action: none;
 }
 
-/* ===== パレット ===== */
-#palette {
+/* ===== カラーホイール ===== */
+#colorWheel {
   position: fixed;
-  top: 50px;
+  top: 10px;
   left: 10px;
-  width: 90vw;
-  max-width: 360px;
-  display: none;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px;
-  background: rgba(255,255,255,0.95);
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
   border: 1px solid #ccc;
+  background: white;
 }
 
-#palette.show {
-  display: flex;
-}
-
-.color {
-  width: 20px;
-  height: 20px;
-  border: 1px solid #aaa;
-}
-
-/* ===== UIボタン ===== */
+/* ===== ボタン ===== */
 button {
   margin: 4px;
 }
@@ -103,13 +88,13 @@ button {
   <h1>🌳 ドット絵の森</h1>
 
   <select id="sizeSelect">
-    <option value="8">8×8</option>
-    <option value="16">16×16</option>
-    <option value="32" selected>32×32</option>
-    <option value="64">64×64</option>
-    <option value="128">128×128</option>
-    <option value="256">256×256</option>
-    <option value="512">512×512</option>
+    <option value="8">8</option>
+    <option value="16">16</option>
+    <option value="32" selected>32</option>
+    <option value="64">64</option>
+    <option value="128">128</option>
+    <option value="256">256</option>
+    <option value="512">512</option>
   </select>
 
   <button id="createRoom">🌱 部屋作成</button>
@@ -120,16 +105,18 @@ button {
 
 <!-- ===== 本体 ===== -->
 <div id="app">
-  <button id="togglePalette">🎨</button>
+
+  <canvas id="colorWheel" width="160" height="160"></canvas>
+
   <button id="saveBtn">💾 PNG保存</button>
 
-  <div id="palette"></div>
   <canvas id="canvas"></canvas>
 
   <div id="chatBox">
     <div id="messages"></div>
     <input id="chatInput" placeholder="メッセージ" />
   </div>
+
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -179,61 +166,72 @@ function init() {
   let board = [];
   let selected = "#000";
 
-  /* ===== パレット ===== */
-  const palette = document.getElementById("palette");
+  /* ===== カラーホイール ===== */
+  const wheel = document.getElementById("colorWheel");
+  const wctx = wheel.getContext("2d");
 
-  const colors = (() => {
-    const c = [];
-    [0,51,102,153,204,255].forEach(r =>
-      [0,51,102,153,204,255].forEach(g =>
-        [0,51,102,153,204,255].forEach(b =>
-          c.push(`rgb(${r},${g},${b})`)
-        )
-      )
-    );
-    return c;
-  })();
+  const r = 80;
+  const c = 80;
 
-  colors.forEach(c => {
-    const d = document.createElement("div");
-    d.className = "color";
-    d.style.background = c;
-    d.onclick = () => selected = c;
-    palette.appendChild(d);
-  });
+  function drawWheel() {
+    for (let a = 0; a < 360; a++) {
+      const rad = (a * Math.PI) / 180;
 
-  /* ===== パレット開閉 ===== */
-  document.getElementById("togglePalette").onclick = () => {
-    palette.classList.toggle("show");
+      for (let i = 0; i < r; i++) {
+        const x = c + Math.cos(rad) * i;
+        const y = c + Math.sin(rad) * i;
+
+        wctx.fillStyle = `hsl(${a},${(i/r)*100}%,50%)`;
+        wctx.fillRect(x, y, 2, 2);
+      }
+    }
+  }
+
+  drawWheel();
+
+  wheel.onclick = (e) => {
+    const rect = wheel.getBoundingClientRect();
+
+    const x = e.clientX - rect.left - c;
+    const y = e.clientY - rect.top - c;
+
+    const dist = Math.sqrt(x*x + y*y);
+    if (dist > r) return;
+
+    const angle = (Math.atan2(y,x)*180)/Math.PI;
+    const hue = (angle+360)%360;
+    const sat = dist/r;
+
+    selected = `hsl(${hue},${sat*100}%,50%)`;
   };
 
   /* ===== 保存 ===== */
   document.getElementById("saveBtn").onclick = () => {
     const link = document.createElement("a");
-    link.download = `dot-art-${Date.now()}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.download = `dot-${Date.now()}.png`;
+    link.href = canvas.toDataURL();
     link.click();
   };
 
   /* ===== 描画 ===== */
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let x = 0; x < GRID_SIZE; x++) {
-
+    for (let y=0;y<GRID_SIZE;y++){
+      for (let x=0;x<GRID_SIZE;x++){
         ctx.fillStyle = board[y][x];
+
         ctx.fillRect(
-          x * cellSize,
-          y * cellSize,
+          x*cellSize,
+          y*cellSize,
           cellSize,
           cellSize
         );
 
-        ctx.strokeStyle = "#eee";
+        ctx.strokeStyle="#eee";
         ctx.strokeRect(
-          x * cellSize,
-          y * cellSize,
+          x*cellSize,
+          y*cellSize,
           cellSize,
           cellSize
         );
@@ -241,8 +239,8 @@ function init() {
     }
   }
 
-  socket.on("init", data => {
-    board = data.board;
+  socket.on("init", d => {
+    board = d.board;
     draw();
   });
 
@@ -251,30 +249,26 @@ function init() {
     draw();
   });
 
-  canvas.onclick = (e) => {
+  canvas.onclick = e => {
     const rect = canvas.getBoundingClientRect();
 
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
+    const x = Math.floor((e.clientX-rect.left)/cellSize);
+    const y = Math.floor((e.clientY-rect.top)/cellSize);
 
-    socket.emit("draw", { x, y, color: selected });
+    socket.emit("draw",{x,y,color:selected});
   };
 
   /* ===== チャット ===== */
   document.getElementById("chatInput").onkeydown = e => {
-    if (e.key === "Enter") {
-      socket.emit("chat", {
-        user: "名無し",
-        message: e.target.value
-      });
-      e.target.value = "";
+    if (e.key==="Enter"){
+      socket.emit("chat",{user:"名無し",message:e.target.value});
+      e.target.value="";
     }
   };
 
   socket.on("chat", d => {
-    const div = document.createElement("div");
-    div.textContent =
-      d.user === "system" ? d.message : `${d.user}: ${d.message}`;
+    const div=document.createElement("div");
+    div.textContent = d.user==="system"?d.message:`${d.user}: ${d.message}`;
     document.getElementById("messages").appendChild(div);
   });
 }

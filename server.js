@@ -35,7 +35,7 @@ function save() {
 
 load();
 
-/* ===== サイズ制限（固定） ===== */
+/* ===== サイズ制限 ===== */
 function validateSize(size) {
   const allowed = [8,16,32,64,128,256,512];
   return allowed.includes(size) ? size : 32;
@@ -70,11 +70,6 @@ io.on("connection", (socket) => {
   socket.join(room);
 
   io.to(room).emit("users", roomUsers[room]);
-
-  io.to(room).emit("chat", {
-    user: "system",
-    message: "👤 入室しました"
-  });
 
   socket.emit("init", rooms[room]);
 
@@ -118,7 +113,6 @@ io.on("connection", (socket) => {
 /* ===== 自動保存 ===== */
 setInterval(save, 5000);
 
-/* ===== 起動 ===== */
 server.listen(PORT, "0.0.0.0", () => {
   console.log("🌳 ドット絵の森 起動");
 });
