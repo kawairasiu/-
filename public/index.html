@@ -152,7 +152,6 @@ window.onload = () => {
   }
 };
 
-/* ===== ルーム ===== */
 document.getElementById("createRoom").onclick = () => {
   const id = Math.random().toString(36).substring(2,7);
   const size = document.getElementById("sizeSelect").value;
@@ -171,96 +170,116 @@ function init() {
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
 
-  const GRID_SIZE = 32;
+  let GRID_SIZE = 32;
   const CANVAS_SIZE = 512;
-  const cellSize = CANVAS_SIZE / GRID_SIZE;
 
   canvas.width = CANVAS_SIZE;
   canvas.height = CANVAS_SIZE;
 
   let board = [];
   let selected = "#000";
-  let eyeDropper = false;
+  let eyeDrop = false;
   let recent = [];
-  let selectedHue = 0;
 
-  /* ===== カラーホイール ===== */
+  /* ===== サイズ反映（ここ重要） ===== */
+  socket.on("init", (data) => {
+    board = data.board;
+    GRID_SIZE = data.size; // ←ここで修正される
+
+    draw();
+  });
+
+  function cellSize() {
+    return CANVAS_SIZE / GRID_SIZE;
+  }
+
+  /* ===== カラーホイール（修正版・安定） ===== */
   const wheel = document.getElementById("colorWheel");
   const wctx = wheel.getContext("2d");
 
-  const c = 80;
+  const cx = 80;
+  const cy = 80;
+  const radius = 80;
 
   function drawWheel() {
-    for (let a=0;a<360;a++){
-      const rad=(a*Math.PI)/180;
+    for (let a = 0; a < 360; a++) {
+      const rad = (a * Math.PI) / 180;
 
-      for(let r=0;r<80;r++){
-        const x=c+Math.cos(rad)*r;
-        const y=c+Math.sin(rad)*r;
+      for (let r = 0; r < radius; r++) {
+        const x = cx + Math.cos(rad) * r;
+        const y = cy + Math.sin(rad) * r;
 
-        wctx.fillStyle=`hsl(${a},${(r/80)*100}%,50%)`;
-        wctx.fillRect(x,y,2,2);
+        const sat = r / radius;
+
+        wctx.fillStyle = `hsl(${a},${sat*100}%,50%)`;
+        wctx.fillRect(x, y, 2, 2);
       }
     }
   }
 
   drawWheel();
 
-  /* ===== 開閉 ===== */
   document.getElementById("togglePicker").onclick = () => {
     wheel.classList.toggle("show");
   };
 
+  wheel.onclick = (e) => {
+    const rect = wheel.getBoundingClientRect();
+
+    const x = e.clientX - rect.left - cx;
+    const y = e.clientY - rect.top - cy;
+
+    const dist = Math.sqrt(x*x + y*y);
+    if (dist > radius) return;
+
+    const angle = (Math.atan2(y,x)*180/Math.PI);
+    const hue = (angle+360)%360;
+
+    const sat = dist/radius;
+
+    selected = `hsl(${hue},${sat*100}%,50%)`;
+  };
+
   /* ===== スポイト ===== */
   document.getElementById("eyeBtn").onclick = () => {
-    eyeDropper = !eyeDropper;
+    eyeDrop = !eyeDrop;
   };
 
   /* ===== 最近色 ===== */
-  function addRecent(color){
-    recent.unshift(color);
+  function addRecent(c){
+    recent.unshift(c);
     recent=[...new Set(recent)].slice(0,4);
 
     const div=document.getElementById("recent");
     div.innerHTML="";
 
-    recent.forEach(c=>{
-      const box=document.createElement("div");
-      box.style.width="20px";
-      box.style.height="20px";
-      box.style.background=c;
-      box.onclick=()=>selected=c;
-      div.appendChild(box);
+    recent.forEach(col=>{
+      const b=document.createElement("div");
+      b.style.width="20px";
+      b.style.height="20px";
+      b.style.background=col;
+      b.onclick=()=>selected=col;
+      div.appendChild(b);
     });
   }
-
-  /* ===== PNG保存 ===== */
-  document.getElementById("saveBtn").onclick=()=>{
-    const a=document.createElement("a");
-    a.download=`dot-${Date.now()}.png`;
-    a.href=canvas.toDataURL();
-    a.click();
-  };
 
   /* ===== 描画 ===== */
   function draw(){
     ctx.clearRect(0,0,512,512);
 
+    const size = cellSize();
+
     for(let y=0;y<GRID_SIZE;y++){
       for(let x=0;x<GRID_SIZE;x++){
+
         ctx.fillStyle=board[y][x];
 
-        ctx.fillRect(x*cellSize,y*cellSize,cellSize,cellSize);
+        ctx.fillRect(x*size,y*size,size,size);
         ctx.strokeStyle="#eee";
-        ctx.strokeRect(x*cellSize,y*cellSize,cellSize,cellSize);
+        ctx.strokeRect(x*size,y*size,size,size);
       }
     }
   }
-
-  socket.on("init",d=>{
-    board=d.board;
-    draw();
-  });
 
   socket.on("draw",d=>{
     board[d.y][d.x]=d.color;
@@ -270,19 +289,27 @@ function init() {
   /* ===== クリック ===== */
   canvas.onclick=(e)=>{
     const rect=canvas.getBoundingClientRect();
+    const size=cellSize();
 
-    const x=Math.floor((e.clientX-rect.left)/cellSize);
-    const y=Math.floor((e.clientY-rect.top)/cellSize);
+    const x=Math.floor((e.clientX-rect.left)/size);
+    const y=Math.floor((e.clientY-rect.top)/size);
 
-    if(eyeDropper){
+    if(eyeDrop){
       selected=board[y][x];
-      addRecent(selected);
-      eyeDropper=false;
+      eyeDrop=false;
       return;
     }
 
     socket.emit("draw",{x,y,color:selected});
     addRecent(selected);
+  };
+
+  /* ===== PNG保存 ===== */
+  document.getElementById("saveBtn").onclick=()=>{
+    const a=document.createElement("a");
+    a.download=`dot-${Date.now()}.png`;
+    a.href=canvas.toDataURL();
+    a.click();
   };
 
   /* ===== チャット ===== */

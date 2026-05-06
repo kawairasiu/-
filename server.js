@@ -15,6 +15,24 @@ app.use(express.static("public"));
 let rooms = {};
 let roomUsers = {};
 
+const ALLOWED_SIZES = [8,16,32,64,128,256,512];
+
+function validateSize(size) {
+  size = Number(size);
+  return ALLOWED_SIZES.includes(size) ? size : 32;
+}
+
+function createRoom(room, size) {
+  size = validateSize(size);
+
+  rooms[room] = {
+    size,
+    board: Array.from({ length: size }, () =>
+      Array(size).fill("#ffffff")
+    )
+  };
+}
+
 function load() {
   try {
     if (fs.existsSync(SAVE_FILE)) {
@@ -33,24 +51,6 @@ function save() {
 
 load();
 
-const allowedSizes = [8,16,32,64,128,256,512];
-
-function validateSize(size) {
-  size = Number(size);
-  return allowedSizes.includes(size) ? size : 32;
-}
-
-function createRoom(room, size) {
-  size = validateSize(size);
-
-  rooms[room] = {
-    size,
-    board: Array.from({ length: size }, () =>
-      Array(size).fill("#ffffff")
-    )
-  };
-}
-
 io.on("connection", (socket) => {
   const room = socket.handshake.query.room || "default";
   let size = validateSize(socket.handshake.query.size || 32);
@@ -68,11 +68,9 @@ io.on("connection", (socket) => {
 
   socket.emit("init", rooms[room]);
 
-  socket.on("draw", (data) => {
+  socket.on("draw", ({ x, y, color }) => {
     const r = rooms[room];
     if (!r) return;
-
-    const { x, y, color } = data;
 
     if (x < 0 || y < 0 || x >= r.size || y >= r.size) return;
 
