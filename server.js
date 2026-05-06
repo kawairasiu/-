@@ -8,7 +8,6 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
-const SAVE_FILE = "save.json";
 
 app.use(express.static("public"));
 
@@ -33,27 +32,14 @@ function createRoom(room, size) {
   };
 }
 
-function load() {
-  try {
-    if (fs.existsSync(SAVE_FILE)) {
-      rooms = JSON.parse(fs.readFileSync(SAVE_FILE, "utf8"));
-    }
-  } catch {
-    rooms = {};
-  }
-}
-
-function save() {
-  try {
-    fs.writeFileSync(SAVE_FILE, JSON.stringify(rooms));
-  } catch {}
-}
-
-load();
-
 io.on("connection", (socket) => {
+
   const room = socket.handshake.query.room || "default";
   const size = validateSize(socket.handshake.query.size || 32);
+
+  const name = socket.handshake.query.name || "名無し";
+
+  socket.name = name;
 
   if (!rooms[room]) {
     createRoom(room, size);
@@ -81,7 +67,7 @@ io.on("connection", (socket) => {
 
   socket.on("chat", (data) => {
     io.to(room).emit("chat", {
-      user: data.user || "名無し",
+      user: socket.name,
       message: data.message
     });
   });
@@ -93,14 +79,10 @@ io.on("connection", (socket) => {
 
     io.to(room).emit("chat", {
       user: "system",
-      message: "👋 退出しました"
+      message: `${socket.name} が退出しました`
     });
   });
-
-  socket.on("save", save);
 });
-
-setInterval(save, 5000);
 
 server.listen(PORT, () => {
   console.log("🌳 ドット絵の森 起動");
