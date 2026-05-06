@@ -29,7 +29,7 @@ body {
   display: none;
 }
 
-/* ===== キャンバス ===== */
+/* ===== キャンバス（固定サイズ） ===== */
 canvas {
   display: block;
   margin: auto;
@@ -92,14 +92,10 @@ canvas {
 <div id="home">
   <h1>🌳 ドット絵の森</h1>
 
-  <p id="userCount">👥 0人オンライン</p>
-
-  <input id="sizeInput" type="number" min="8" max="512" value="32">
-
-  <button id="createRoom">🌱 部屋を作る</button>
+  <button id="createRoom">🌱 部屋作成</button>
 
   <input id="roomInput" placeholder="部屋ID" />
-  <button id="joinRoom">🌿 入る</button>
+  <button id="joinRoom">🌿 入室</button>
 </div>
 
 <!-- ===== 本体 ===== -->
@@ -118,7 +114,6 @@ canvas {
 <script>
 const params = new URLSearchParams(location.search);
 const room = params.get("room");
-const sizeParam = params.get("size") || 32;
 
 window.onload = () => {
   if (!room) {
@@ -133,31 +128,31 @@ window.onload = () => {
 /* ===== ルーム作成 ===== */
 document.getElementById("createRoom").onclick = () => {
   const id = Math.random().toString(36).substring(2, 8);
-  let size = Number(document.getElementById("sizeInput").value);
-  size = Math.max(8, Math.min(size, 512));
-
-  location.href = `?room=${id}&size=${size}`;
+  location.href = `?room=${id}`;
 };
 
 /* ===== ルーム参加 ===== */
 document.getElementById("joinRoom").onclick = () => {
   const id = document.getElementById("roomInput").value;
-  if (id) location.href = "?room=" + id;
+  if (id) location.href = `?room=${id}`;
 };
 
 function init() {
-  const socket = io({
-    query: { room, size: sizeParam }
-  });
+  const socket = io({ query: { room } });
 
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
-  const pixel = 20;
-  let board = [];
-  let selected = "#000000";
+  /* ===== 固定設定 ===== */
+  const GRID_SIZE = 32;
+  const CANVAS_SIZE = 512; // 固定キャンバス
+  const cellSize = CANVAS_SIZE / GRID_SIZE;
 
-  let scale = 1;
+  canvas.width = CANVAS_SIZE;
+  canvas.height = CANVAS_SIZE;
+
+  let board = [];
+  let selected = "#000";
 
   /* ===== パレット ===== */
   const palette = document.getElementById("palette");
@@ -184,25 +179,32 @@ function init() {
 
   /* ===== 描画 ===== */
   function draw() {
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    for (let y = 0; y < board.length; y++) {
-      for (let x = 0; x < board.length; x++) {
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+
         ctx.fillStyle = board[y][x];
-        ctx.fillRect(x*pixel, y*pixel, pixel, pixel);
+        ctx.fillRect(
+          x * cellSize,
+          y * cellSize,
+          cellSize,
+          cellSize
+        );
+
         ctx.strokeStyle = "#eee";
-        ctx.strokeRect(x*pixel, y*pixel, pixel, pixel);
+        ctx.strokeRect(
+          x * cellSize,
+          y * cellSize,
+          cellSize,
+          cellSize
+        );
       }
     }
   }
 
   socket.on("init", data => {
     board = data.board;
-
-    const size = data.size;
-    canvas.width = size * pixel;
-    canvas.height = size * pixel;
-
     draw();
   });
 
@@ -211,17 +213,19 @@ function init() {
     draw();
   });
 
-  canvas.onclick = e => {
-    const x = Math.floor(e.offsetX / pixel / scale);
-    const y = Math.floor(e.offsetY / pixel / scale);
+  /* ===== クリック描画 ===== */
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+
+    const x = Math.floor((e.clientX - rect.left) / cellSize);
+    const y = Math.floor((e.clientY - rect.top) / cellSize);
 
     socket.emit("draw", { x, y, color: selected });
   };
 
   /* ===== 人数 ===== */
   socket.on("users", c => {
-    document.getElementById("userCount").innerText =
-      `👥 ${c}人オンライン`;
+    console.log("人数:", c);
   });
 
   /* ===== チャット ===== */

@@ -15,7 +15,7 @@ app.use(express.static("public"));
 let rooms = {};
 let roomUsers = {};
 
-/* ===== 保存ロード ===== */
+/* ===== 保存読み込み ===== */
 function load() {
   try {
     if (fs.existsSync(SAVE_FILE)) {
@@ -36,8 +36,8 @@ function save() {
 load();
 
 /* ===== ルーム作成 ===== */
-function createRoom(room, size) {
-  size = Math.max(8, Math.min(size, 512));
+function createRoom(room) {
+  const size = 32; // ★固定
 
   rooms[room] = {
     size,
@@ -50,12 +50,9 @@ function createRoom(room, size) {
 /* ===== 接続 ===== */
 io.on("connection", (socket) => {
   const room = socket.handshake.query.room || "default";
-  let size = Number(socket.handshake.query.size || 32);
-
-  size = Math.max(8, Math.min(size, 512));
 
   if (!rooms[room]) {
-    createRoom(room, size);
+    createRoom(room);
   }
 
   if (!roomUsers[room]) roomUsers[room] = 0;
@@ -64,11 +61,6 @@ io.on("connection", (socket) => {
   socket.join(room);
 
   io.to(room).emit("users", roomUsers[room]);
-
-  io.to(room).emit("chat", {
-    user: "system",
-    message: "👤 誰かが入室しました"
-  });
 
   socket.emit("init", rooms[room]);
 
