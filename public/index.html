@@ -19,6 +19,7 @@
     background:
       radial-gradient(circle at top left, #fff8ec 0%, transparent 32%),
       radial-gradient(circle at top right, #eef9ff 0%, transparent 28%),
+      radial-gradient(circle at bottom left, #eefdf5 0%, transparent 26%),
       linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
     color: #1f2937;
   }
@@ -91,7 +92,36 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    align-items: center;
     z-index: 1003;
+  }
+
+  #selectedDock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
+
+  #selectedSwatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    border: 1px solid #9ca3af;
+    background: #000000;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
+  }
+
+  #selectedText {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    min-width: 88px;
   }
 
   #userCount {
@@ -108,32 +138,56 @@
     backdrop-filter: blur(8px);
   }
 
-  #colorWheel {
+  #pickerPanel {
     position: fixed;
     top: 58px;
     left: 10px;
-    width: clamp(132px, 36vw, 180px);
-    height: clamp(132px, 36vw, 180px);
+    width: min(48vw, 230px);
     display: none;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background: #fff;
+    flex-direction: column;
+    gap: 10px;
     z-index: 1002;
+  }
+
+  #pickerPanel.show {
+    display: flex;
+  }
+
+  #colorWheel {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    display: block;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: #fff;
     box-shadow: var(--shadow);
     touch-action: none;
   }
 
-  #colorWheel.show {
-    display: block;
+  .pickerCard {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
+
+  .miniLabel {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
+
+  #brightnessSlider {
+    width: 100%;
   }
 
   #recent {
-    position: fixed;
-    top: 250px;
-    left: 10px;
     display: flex;
     gap: 6px;
-    z-index: 1002;
+    flex-wrap: wrap;
   }
 
   .recentColor {
@@ -148,9 +202,13 @@
     position: fixed;
     left: 50%;
     top: 52%;
-    transform: translate(-50%, -50%) translate(0px, 0px) scale(1);
-    transform-origin: center center;
+    transform: translate(-50%, -50%);
     z-index: 1;
+    will-change: transform;
+  }
+
+  #canvasPanZoom {
+    transform-origin: center center;
     will-change: transform;
   }
 
@@ -244,15 +302,33 @@
     <button id="undoBtn">↩</button>
     <button id="redoBtn">↪</button>
     <button id="saveBtn">💾 PNG</button>
+
+    <div id="selectedDock">
+      <div id="selectedSwatch"></div>
+      <div id="selectedText">#000000</div>
+    </div>
   </div>
 
   <div id="userCount">👥 0人オンライン</div>
 
-  <canvas id="colorWheel" width="180" height="180"></canvas>
-  <div id="recent"></div>
+  <div id="pickerPanel">
+    <canvas id="colorWheel" width="180" height="180"></canvas>
+
+    <div class="pickerCard">
+      <div class="miniLabel">明度</div>
+      <input id="brightnessSlider" type="range" min="0" max="100" value="50" />
+    </div>
+
+    <div class="pickerCard">
+      <div class="miniLabel">最近使った色</div>
+      <div id="recent"></div>
+    </div>
+  </div>
 
   <div id="canvasStage">
-    <canvas id="canvas"></canvas>
+    <div id="canvasPanZoom">
+      <canvas id="canvas"></canvas>
+    </div>
   </div>
 
   <div id="chatBox">
@@ -292,6 +368,7 @@ function init() {
   const socket = io({ query: { room, size: sizeParam } });
 
   const canvasStage = document.getElementById("canvasStage");
+  const canvasPanZoom = document.getElementById("canvasPanZoom");
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
@@ -337,8 +414,8 @@ function init() {
   }
 
   function applyTransform() {
-    canvasStage.style.transform =
-      `translate(-50%, -50%) translate(${panX}px, ${panY}px) scale(${viewScale})`;
+    canvasPanZoom.style.transform =
+      `translate(${panX}px, ${panY}px) scale(${viewScale})`;
   }
 
   function fitCanvasDisplay() {
@@ -357,6 +434,13 @@ function init() {
     redoStack = [];
   }
 
+  function updateSelectedColorUI() {
+    const swatch = document.getElementById("selectedSwatch");
+    const text = document.getElementById("selectedText");
+    swatch.style.background = selected;
+    text.textContent = selected;
+  }
+
   function addRecentColor(color) {
     const recentBox = document.getElementById("recent");
     const existing = Array.from(recentBox.querySelectorAll(".recentColor"))
@@ -372,6 +456,7 @@ function init() {
       box.style.background = c;
       box.onclick = () => {
         selected = c;
+        updateSelectedColorUI();
       };
       recentBox.appendChild(box);
     });
@@ -430,8 +515,10 @@ function init() {
   };
 
   /* ===== カラーホイール ===== */
+  const pickerPanel = document.getElementById("pickerPanel");
   const wheel = document.getElementById("colorWheel");
   const wctx = wheel.getContext("2d");
+  const brightnessSlider = document.getElementById("brightnessSlider");
 
   const W = wheel.width;
   const H = wheel.height;
@@ -446,8 +533,14 @@ function init() {
   let innerCursorX = cx + innerR;
   let innerCursorY = cy;
 
-  function updateSelectedColor() {
+  function syncBrightnessUI() {
+    brightnessSlider.value = Math.round(selectedLight * 100);
+  }
+
+  function updateSelectedColorFromHsl() {
     selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
+    updateSelectedColorUI();
+    syncBrightnessUI();
   }
 
   function drawWheel() {
@@ -479,45 +572,65 @@ function init() {
       }
     }
 
+    wctx.beginPath();
+    wctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    wctx.strokeStyle = "#334155";
+    wctx.lineWidth = 2;
+    wctx.stroke();
+
+    wctx.beginPath();
+    wctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    wctx.strokeStyle = "#475569";
+    wctx.lineWidth = 2;
+    wctx.stroke();
+
     const hueRad = (selectedHue * Math.PI) / 180;
     const hueCursorR = (innerR + outerR) / 2;
     const hueCursorX = cx + Math.cos(hueRad) * hueCursorR;
     const hueCursorY = cy + Math.sin(hueRad) * hueCursorR;
 
     wctx.beginPath();
-    wctx.arc(hueCursorX, hueCursorY, 6, 0, Math.PI * 2);
-    wctx.strokeStyle = "#000";
+    wctx.arc(hueCursorX, hueCursorY, 7, 0, Math.PI * 2);
+    wctx.strokeStyle = "#111827";
+    wctx.lineWidth = 3;
+    wctx.stroke();
+
+    wctx.beginPath();
+    wctx.arc(hueCursorX, hueCursorY, 4, 0, Math.PI * 2);
+    wctx.strokeStyle = "#ffffff";
     wctx.lineWidth = 2;
     wctx.stroke();
 
     wctx.beginPath();
-    wctx.arc(hueCursorX, hueCursorY, 3, 0, Math.PI * 2);
-    wctx.strokeStyle = "#fff";
-    wctx.lineWidth = 2;
+    wctx.arc(innerCursorX, innerCursorY, 7, 0, Math.PI * 2);
+    wctx.strokeStyle = "#111827";
+    wctx.lineWidth = 3;
     wctx.stroke();
 
     wctx.beginPath();
-    wctx.arc(innerCursorX, innerCursorY, 6, 0, Math.PI * 2);
-    wctx.strokeStyle = "#000";
-    wctx.lineWidth = 2;
-    wctx.stroke();
-
-    wctx.beginPath();
-    wctx.arc(innerCursorX, innerCursorY, 3, 0, Math.PI * 2);
-    wctx.strokeStyle = "#fff";
+    wctx.arc(innerCursorX, innerCursorY, 4, 0, Math.PI * 2);
+    wctx.strokeStyle = "#ffffff";
     wctx.lineWidth = 2;
     wctx.stroke();
   }
 
-  function handleWheelPointer(e) {
+  function wheelPointFromEvent(e) {
     const rect = wheel.getBoundingClientRect();
-    const x = e.clientX - rect.left - cx;
-    const y = e.clientY - rect.top - cy;
+    const scaleX = wheel.width / rect.width;
+    const scaleY = wheel.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX - cx,
+      y: (e.clientY - rect.top) * scaleY - cy,
+    };
+  }
+
+  function handleWheelPointer(e) {
+    const { x, y } = wheelPointFromEvent(e);
     const dist = Math.sqrt(x * x + y * y);
 
     if (wheelMode === "hue") {
       selectedHue = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-      updateSelectedColor();
+      updateSelectedColorFromHsl();
       drawWheel();
       return;
     }
@@ -525,7 +638,7 @@ function init() {
     if (wheelMode === "inner") {
       selectedSat = clamp(dist / innerR, 0, 1);
       selectedLight = clamp(1 - ((y + innerR) / (innerR * 2)), 0, 1);
-      selected = `hsl(${selectedHue}, ${selectedSat * 100}%, ${selectedLight * 100}%)`;
+      updateSelectedColorFromHsl();
       innerCursorX = cx + x;
       innerCursorY = cy + y;
       drawWheel();
@@ -533,10 +646,11 @@ function init() {
   }
 
   drawWheel();
-  updateSelectedColor();
+  updateSelectedColorUI();
+  syncBrightnessUI();
 
   document.getElementById("togglePicker").onclick = () => {
-    wheel.classList.toggle("show");
+    pickerPanel.classList.toggle("show");
   };
 
   wheel.addEventListener("pointerdown", (e) => {
@@ -545,9 +659,7 @@ function init() {
     wheelPointerId = e.pointerId;
     wheel.setPointerCapture(e.pointerId);
 
-    const rect = wheel.getBoundingClientRect();
-    const x = e.clientX - rect.left - cx;
-    const y = e.clientY - rect.top - cy;
+    const { x, y } = wheelPointFromEvent(e);
     const dist = Math.sqrt(x * x + y * y);
 
     if (dist > innerR && dist <= outerR) {
@@ -579,6 +691,12 @@ function init() {
     wheelDragging = false;
     wheelMode = null;
     wheelPointerId = null;
+  });
+
+  brightnessSlider.addEventListener("input", () => {
+    selectedLight = Number(brightnessSlider.value) / 100;
+    updateSelectedColorFromHsl();
+    drawWheel();
   });
 
   /* ===== スポイト ===== */
@@ -638,7 +756,7 @@ function init() {
     document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
   });
 
-  /* ===== 描画 ===== */
+  /* ===== キャンバス描画 ===== */
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
   canvas.onclick = (e) => {
@@ -648,6 +766,7 @@ function init() {
     if (eyeDrop) {
       selected = board[y][x];
       eyeDrop = false;
+      updateSelectedColorUI();
       addRecentColor(selected);
       return;
     }
@@ -662,7 +781,6 @@ function init() {
     addRecentColor(selected);
   };
 
-  /* ===== 最近色 ===== */
   addRecentColor(selected);
 
   /* ===== 右クリックドラッグでパン ===== */
@@ -728,8 +846,8 @@ function init() {
 
       if (pinchStartDist > 0) {
         viewScale = clamp(pinchStartScale * (dist / pinchStartDist), 0.5, 3);
-        panX = panBaseX + (mid.x - pinchStartMidX);
-        panY = panBaseY + (mid.y - pinchStartMidY);
+        panX = pinchStartPanX + (mid.x - pinchStartMidX);
+        panY = pinchStartPanY + (mid.y - pinchStartMidY);
         applyTransform();
       }
     }
