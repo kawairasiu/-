@@ -53,7 +53,7 @@ load();
 
 io.on("connection", (socket) => {
   const room = socket.handshake.query.room || "default";
-  let size = validateSize(socket.handshake.query.size || 32);
+  const size = validateSize(socket.handshake.query.size || 32);
 
   if (!rooms[room]) {
     createRoom(room, size);
