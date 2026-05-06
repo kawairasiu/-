@@ -15,7 +15,7 @@ app.use(express.static("public"));
 let rooms = {};
 let roomUsers = {};
 
-/* ===== 保存読み込み ===== */
+/* ===== 保存ロード ===== */
 function load() {
   try {
     if (fs.existsSync(SAVE_FILE)) {
@@ -35,9 +35,15 @@ function save() {
 
 load();
 
+/* ===== サイズ制限（固定） ===== */
+function validateSize(size) {
+  const allowed = [8,16,32,64,128,256,512];
+  return allowed.includes(size) ? size : 32;
+}
+
 /* ===== ルーム作成 ===== */
-function createRoom(room) {
-  const size = 32; // ★固定
+function createRoom(room, size) {
+  size = validateSize(size);
 
   rooms[room] = {
     size,
@@ -50,9 +56,12 @@ function createRoom(room) {
 /* ===== 接続 ===== */
 io.on("connection", (socket) => {
   const room = socket.handshake.query.room || "default";
+  let size = Number(socket.handshake.query.size || 32);
+
+  size = validateSize(size);
 
   if (!rooms[room]) {
-    createRoom(room);
+    createRoom(room, size);
   }
 
   if (!roomUsers[room]) roomUsers[room] = 0;
@@ -62,14 +71,20 @@ io.on("connection", (socket) => {
 
   io.to(room).emit("users", roomUsers[room]);
 
+  io.to(room).emit("chat", {
+    user: "system",
+    message: "👤 入室しました"
+  });
+
   socket.emit("init", rooms[room]);
 
   /* ===== 描画 ===== */
   socket.on("draw", (data) => {
-    const { x, y, color } = data;
     const r = rooms[room];
-
     if (!r) return;
+
+    const { x, y, color } = data;
+
     if (x < 0 || y < 0 || x >= r.size || y >= r.size) return;
 
     r.board[y][x] = color;
@@ -93,7 +108,7 @@ io.on("connection", (socket) => {
 
     io.to(room).emit("chat", {
       user: "system",
-      message: "👋 誰かが退出しました"
+      message: "👋 退出しました"
     });
   });
 

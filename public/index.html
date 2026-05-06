@@ -9,7 +9,7 @@
 <style>
 body {
   margin: 0;
-  background: #fff;
+  background: white;
   font-family: sans-serif;
 }
 
@@ -24,12 +24,12 @@ body {
   gap: 12px;
 }
 
-/* ===== アプリ ===== */
+/* ===== 本体 ===== */
 #app {
   display: none;
 }
 
-/* ===== キャンバス（固定サイズ） ===== */
+/* ===== キャンバス ===== */
 canvas {
   display: block;
   margin: auto;
@@ -40,21 +40,31 @@ canvas {
 /* ===== パレット ===== */
 #palette {
   position: fixed;
-  top: 10px;
+  top: 50px;
   left: 10px;
   width: 90vw;
   max-width: 360px;
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   gap: 4px;
   padding: 8px;
   background: rgba(255,255,255,0.95);
+  border: 1px solid #ccc;
+}
+
+#palette.show {
+  display: flex;
 }
 
 .color {
   width: 20px;
   height: 20px;
   border: 1px solid #aaa;
+}
+
+/* ===== UIボタン ===== */
+button {
+  margin: 4px;
 }
 
 /* ===== チャット ===== */
@@ -92,6 +102,16 @@ canvas {
 <div id="home">
   <h1>🌳 ドット絵の森</h1>
 
+  <select id="sizeSelect">
+    <option value="8">8×8</option>
+    <option value="16">16×16</option>
+    <option value="32" selected>32×32</option>
+    <option value="64">64×64</option>
+    <option value="128">128×128</option>
+    <option value="256">256×256</option>
+    <option value="512">512×512</option>
+  </select>
+
   <button id="createRoom">🌱 部屋作成</button>
 
   <input id="roomInput" placeholder="部屋ID" />
@@ -100,6 +120,9 @@ canvas {
 
 <!-- ===== 本体 ===== -->
 <div id="app">
+  <button id="togglePalette">🎨</button>
+  <button id="saveBtn">💾 PNG保存</button>
+
   <div id="palette"></div>
   <canvas id="canvas"></canvas>
 
@@ -128,10 +151,12 @@ window.onload = () => {
 /* ===== ルーム作成 ===== */
 document.getElementById("createRoom").onclick = () => {
   const id = Math.random().toString(36).substring(2, 8);
-  location.href = `?room=${id}`;
+  const size = document.getElementById("sizeSelect").value;
+
+  location.href = `?room=${id}&size=${size}`;
 };
 
-/* ===== ルーム参加 ===== */
+/* ===== 入室 ===== */
 document.getElementById("joinRoom").onclick = () => {
   const id = document.getElementById("roomInput").value;
   if (id) location.href = `?room=${id}`;
@@ -142,10 +167,10 @@ function init() {
 
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
 
-  /* ===== 固定設定 ===== */
   const GRID_SIZE = 32;
-  const CANVAS_SIZE = 512; // 固定キャンバス
+  const CANVAS_SIZE = 512;
   const cellSize = CANVAS_SIZE / GRID_SIZE;
 
   canvas.width = CANVAS_SIZE;
@@ -176,6 +201,19 @@ function init() {
     d.onclick = () => selected = c;
     palette.appendChild(d);
   });
+
+  /* ===== パレット開閉 ===== */
+  document.getElementById("togglePalette").onclick = () => {
+    palette.classList.toggle("show");
+  };
+
+  /* ===== 保存 ===== */
+  document.getElementById("saveBtn").onclick = () => {
+    const link = document.createElement("a");
+    link.download = `dot-art-${Date.now()}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
 
   /* ===== 描画 ===== */
   function draw() {
@@ -213,7 +251,6 @@ function init() {
     draw();
   });
 
-  /* ===== クリック描画 ===== */
   canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
 
@@ -222,11 +259,6 @@ function init() {
 
     socket.emit("draw", { x, y, color: selected });
   };
-
-  /* ===== 人数 ===== */
-  socket.on("users", c => {
-    console.log("人数:", c);
-  });
 
   /* ===== チャット ===== */
   document.getElementById("chatInput").onkeydown = e => {
